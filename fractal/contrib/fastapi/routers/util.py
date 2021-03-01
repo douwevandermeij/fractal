@@ -3,7 +3,7 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jwt import DecodeError, ExpiredSignatureError
 
-from fractal.core import DomainException
+from fractal.core.exceptions import DomainException
 
 
 class TokenInvalidException(DomainException):

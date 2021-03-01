@@ -1,7 +1,7 @@
 from typing import Set
 
 from fractal.contrib.roles.models import Role
-from fractal.core import DomainException
+from fractal.core.exceptions import DomainException
 from fractal.core.services import Service
 
 

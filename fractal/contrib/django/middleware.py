@@ -1,9 +1,9 @@
 from django.apps import apps
-from service.settings import Settings
 
 from fractal.core.repositories.external_data_inmemory_repository_mixin import (
     ExternalDataInMemoryRepositoryMixin,
 )
+from fractal.core.utils.settings import Settings
 
 
 class SessionMiddleware:

@@ -7,9 +7,9 @@ from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from fractal.contrib.fastapi import ErrorMessage
-from fractal.core import DomainException
-from fractal.core.utils import Settings
+from fractal.contrib.fastapi.exceptions.error_message import ErrorMessage
+from fractal.core.exceptions import DomainException
+from fractal.core.utils.settings import Settings
 
 
 def install_fastapi(settings: Settings):

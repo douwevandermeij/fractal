@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
-from fractal.contrib.fastapi.routers import AdapterInfo, Info, Routes
-from fractal.core.utils import ApplicationContext
+from fractal.contrib.fastapi.routers import Routes
+from fractal.contrib.fastapi.routers.domain.models import AdapterInfo, Info
+from fractal.core.utils.application_context import ApplicationContext
 
 
 def inject_default_routes(context: ApplicationContext):
