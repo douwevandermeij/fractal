@@ -1,0 +1,6 @@
+dnspython
+fastapi
+pyjwt
+python-multipart
+sentry-sdk
+uvicorn
