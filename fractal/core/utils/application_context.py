@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from fractal.core.repositories import Repository
 from fractal.core.services import Service
-from fractal.core.utils import init_logging
+from fractal.core.utils.loggers import init_logging
 
 
 class ApplicationContext(object):
@@ -50,7 +50,7 @@ class ApplicationContext(object):
         pass
 
     def load_internal_services(self):
-        from fractal.core.event_sourcing import EventPublisher
+        from fractal.core.event_sourcing.event_publisher import EventPublisher
 
         self.event_publisher = EventPublisher(self.load_event_projectors())
 
@@ -64,7 +64,7 @@ class ApplicationContext(object):
         pass
 
     def load_command_bus(self):
-        from fractal.core.command_bus import CommandBus
+        from fractal.core.command_bus.command_bus import CommandBus
 
         self.command_bus = CommandBus()
 

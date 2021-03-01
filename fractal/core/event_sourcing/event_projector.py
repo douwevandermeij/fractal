@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Type
 
-from fractal.core.event_sourcing import Event
+from fractal.core.event_sourcing.event import Event
 
 
 class EventProjector(ABC):

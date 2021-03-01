@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from fractal.core.command_bus import Command
+from fractal.core.command_bus.command import Command
 
 
 @dataclass

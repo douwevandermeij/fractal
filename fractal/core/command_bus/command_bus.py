@@ -1,7 +1,8 @@
 from collections import defaultdict
 from typing import List, Type
 
-from fractal.core.command_bus import Command, CommandHandler
+from fractal.core.command_bus.command import Command
+from fractal.core.command_bus.command_handler import CommandHandler
 
 
 class CommandBus(CommandHandler):

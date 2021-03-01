@@ -3,8 +3,10 @@ import json
 from dataclasses import asdict
 from typing import Type
 
-from fractal.core.event_sourcing import EventProjector, Message, SendingEvent
-from fractal.core.utils import EnhancedEncoder
+from fractal.core.event_sourcing.event import SendingEvent
+from fractal.core.event_sourcing.event_projector import EventProjector
+from fractal.core.event_sourcing.message import Message
+from fractal.core.utils.json_encoder import EnhancedEncoder
 
 
 class PrintEventProjector(EventProjector):

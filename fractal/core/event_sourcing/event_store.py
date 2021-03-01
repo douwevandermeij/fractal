@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from fractal.core.event_sourcing import EventStream
+from fractal.core.event_sourcing.event_stream import EventStream
 
 
 class EventStore(ABC):

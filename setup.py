@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-REQUIREMENTS = ()
+REQUIREMENTS = ("python-dotenv",)
 TEST_REQUIREMENTS = (
     "black",
     "flake8",

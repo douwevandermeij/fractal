@@ -2,7 +2,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Generic, List, TypeVar
 
-from fractal.core.event_sourcing import Event
+from fractal.core.event_sourcing.event import Event
 
 E = TypeVar("E", bound=Event)
 
