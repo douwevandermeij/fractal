@@ -7,13 +7,13 @@ from django.db.models import Q
 from fractal.core.exceptions import DomainException
 from fractal.core.specifications.generic.collections import (
     AndSpecification,
-    InSpecification,
     OrSpecification,
 )
 from fractal.core.specifications.generic.operators import (
     EqualsSpecification,
     GreaterThenEqualSpecification,
     GreaterThenSpecification,
+    InSpecification,
     LessThenEqualSpecification,
     LessThenSpecification,
     RegexStringMatchSpecification,

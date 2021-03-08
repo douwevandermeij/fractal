@@ -8,11 +8,16 @@ class Model:
     @classmethod
     def clean(cls, **kwargs):
         field_names = set(f.name for f in dataclasses.fields(cls))
-        return cls(**{k: v for k, v in kwargs.items() if k in field_names})
+        return cls(**{k: v for k, v in kwargs.items() if k in field_names})  # NOQA
 
     @classmethod
     def from_dict(cls, data):
         return cls.clean(**data)
+
+
+@dataclass
+class Contract(Model):
+    pass
 
 
 class EnumModel(str, Enum):

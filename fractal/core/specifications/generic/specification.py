@@ -20,3 +20,6 @@ class Specification(ABC):
         from fractal.core.specifications.generic.collections import OrSpecification
 
         return OrSpecification([self, specification])
+
+    def __str__(self):
+        return self.__class__.__name__

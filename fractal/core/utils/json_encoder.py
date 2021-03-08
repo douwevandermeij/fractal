@@ -1,5 +1,6 @@
 import datetime
 import json
+from decimal import Decimal
 from uuid import UUID
 
 
@@ -13,6 +14,8 @@ class EnhancedEncoder(json.JSONEncoder):
             return list(o)
         elif isinstance(o, UUID):
             return str(o)
+        elif isinstance(o, Decimal):
+            return str(o)
         elif isinstance(o, object):
             return o.__dict__
-        return json.JSONEncoder.default(self, o)
+        return super(EnhancedEncoder, self).default(o)

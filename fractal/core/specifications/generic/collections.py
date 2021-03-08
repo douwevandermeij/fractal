@@ -15,33 +15,27 @@ class CollectionSpecification(Specification):
     def to_collection(self) -> Collection:
         return self.specifications
 
-    def and_spec(self, specification: Specification):
-        if isinstance(specification, CollectionSpecification):
-            self.specifications += specification.specifications
-        else:
-            self.specifications.append(specification)
-
-    def or_spec(self, specification: Specification):
-        self.and_spec(specification)
+    def __str__(self):
+        return f"{self.__class__.__name__}({','.join(map(lambda s: str(s), self.specifications))})"
 
 
 class AndSpecification(CollectionSpecification):
     def is_satisfied_by(self, obj: Any) -> bool:
         return all([spec.is_satisfied_by(obj) for spec in self.specifications])
 
+    def And(self, specification: Specification):
+        if isinstance(specification, AndSpecification):
+            self.specifications += specification.specifications
+        else:
+            self.specifications.append(specification)
+
 
 class OrSpecification(CollectionSpecification):
     def is_satisfied_by(self, obj: Any) -> bool:
         return any([spec.is_satisfied_by(obj) for spec in self.specifications])
 
-
-class InSpecification(Specification):
-    def __init__(self, field: str, values: List[Any]):
-        self.field = field
-        self.values = values
-
-    def is_satisfied_by(self, obj: Any) -> bool:
-        return getattr(obj, self.field) in self.values
-
-    def to_collection(self) -> Collection:
-        return {self.field, self.values}
+    def Or(self, specification: Specification):
+        if isinstance(specification, OrSpecification):
+            self.specifications += specification.specifications
+        else:
+            self.specifications.append(specification)
