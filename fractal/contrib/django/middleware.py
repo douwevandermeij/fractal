@@ -13,6 +13,10 @@ def before_view(request, fractal):
 def after_view(request, fractal):
     for repository in fractal.context.repositories:
         if issubclass(type(repository), ExternalDataInMemoryRepositoryMixin):
+            if "clear_fractal" in request.session:
+                if "fractal" in request.session:
+                    del request.session["fractal"]
+                return
             if "fractal" not in request.session:
                 request.session["fractal"] = {}
             key, data = repository.dump_data_json()
