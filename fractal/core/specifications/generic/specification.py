@@ -11,12 +11,12 @@ class Specification(ABC):
     def to_collection(self) -> Collection:
         raise NotImplementedError
 
-    def And(self, specification: "Specification"):
+    def And(self, specification: "Specification") -> "Specification":
         from fractal.core.specifications.generic.collections import AndSpecification
 
         return AndSpecification([self, specification])
 
-    def Or(self, specification: "Specification"):
+    def Or(self, specification: "Specification") -> "Specification":
         from fractal.core.specifications.generic.collections import OrSpecification
 
         return OrSpecification([self, specification])

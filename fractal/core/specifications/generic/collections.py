@@ -23,19 +23,19 @@ class AndSpecification(CollectionSpecification):
     def is_satisfied_by(self, obj: Any) -> bool:
         return all([spec.is_satisfied_by(obj) for spec in self.specifications])
 
-    def And(self, specification: Specification):
+    def And(self, specification: Specification) -> Specification:
         if isinstance(specification, AndSpecification):
-            self.specifications += specification.specifications
+            return AndSpecification(self.specifications + specification.specifications)
         else:
-            self.specifications.append(specification)
+            return AndSpecification(self.specifications + [specification])
 
 
 class OrSpecification(CollectionSpecification):
     def is_satisfied_by(self, obj: Any) -> bool:
         return any([spec.is_satisfied_by(obj) for spec in self.specifications])
 
-    def Or(self, specification: Specification):
+    def Or(self, specification: Specification) -> Specification:
         if isinstance(specification, OrSpecification):
-            self.specifications += specification.specifications
+            return OrSpecification(self.specifications + specification.specifications)
         else:
-            self.specifications.append(specification)
+            return OrSpecification(self.specifications + [specification])
