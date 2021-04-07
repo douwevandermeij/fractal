@@ -20,6 +20,15 @@ class Contract(Model):
     pass
 
 
+@dataclass
+class CleanContract(Contract):
+    @classmethod
+    def clean(cls, **kwargs):
+        if "$type" in kwargs:
+            kwargs["type"] = kwargs["$type"]
+        return super(CleanContract, cls).clean(**kwargs)
+
+
 class EnumModel(str, Enum):
     @staticmethod
     def values_dict():

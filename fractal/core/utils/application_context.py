@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from fractal.core.repositories import Repository
 from fractal.core.services import Service
 from fractal.core.utils.loggers import init_logging
+from fractal.core.utils.string import camel_to_snake
 
 
 class ApplicationContext(object):
@@ -72,7 +73,14 @@ class ApplicationContext(object):
         self.repositories.append(repository)
         return repository
 
-    def install_generator(self, generator_name, generator):
+    def install_service(self, service, *, name=""):
+        if not name:
+            name = camel_to_snake(service.__name__)
+        setattr(ApplicationContext, name, property(
+            lambda self: next(service.install(self))
+        ))
+
+    def install_generator(self, generator_name, generator):  # TODO deprecated
         setattr(self, f"_{generator_name}", generator)
 
         def get_service():
