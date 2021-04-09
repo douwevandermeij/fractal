@@ -1,5 +1,3 @@
-from dataclasses import asdict
-
 from fractal.core.process.action import Action
 from fractal.core.process.process_scope import ProcessScope
 from fractal.core.specifications.generic.specification import Specification

@@ -1,6 +1,8 @@
 from setuptools import find_packages, setup
 
-REQUIREMENTS = ("python-dotenv",)
+REQUIREMENTS = (
+    "python-dotenv",
+)
 TEST_REQUIREMENTS = (
     "black",
     "flake8",
@@ -10,7 +12,7 @@ TEST_REQUIREMENTS = (
 
 setup(
     name="fractal",
-    version="0.0.1",
+    version="0.0.2",
     author="Douwe van der Meij",
     author_email="douwe@karibu-online.nl",
     description="""Fractal is a scaffolding toolkit for building SOLID logic for your Python applications.

@@ -79,19 +79,3 @@ class ApplicationContext(object):
         setattr(ApplicationContext, name, property(
             lambda self: next(service.install(self))
         ))
-
-    def install_generator(self, generator_name, generator):  # TODO deprecated
-        setattr(self, f"_{generator_name}", generator)
-
-        def get_service():
-            if not hasattr(self, f"__{generator_name}"):
-                setattr(
-                    self,
-                    f"__{generator_name}",
-                    next(getattr(self, f"_{generator_name}")),
-                )
-            return getattr(self, f"__{generator_name}")
-
-        setattr(
-            ApplicationContext, generator_name, property(lambda self: get_service())
-        )
