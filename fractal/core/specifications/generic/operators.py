@@ -94,7 +94,7 @@ class GreaterThenEqualSpecification(FieldValueSpecification):
         return {self.field, self.value}
 
 
-class RegexStringMatchSpecification(FieldValueSpecification):
+class ContainsSpecification(FieldValueSpecification):
     def __init__(self, field: str, value: str):
         self.field = field
         self.value = value
@@ -104,3 +104,7 @@ class RegexStringMatchSpecification(FieldValueSpecification):
 
     def to_collection(self) -> Collection:
         return {self.field, self.value}
+
+
+class RegexStringMatchSpecification(ContainsSpecification):
+    pass

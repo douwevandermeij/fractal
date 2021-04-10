@@ -55,7 +55,7 @@ class AddEntityAction(Action):
 
 
 class FetchEntityAction(Action):
-    def __init__(self, specification: Specification, repository_key: str = "repository"):
+    def __init__(self, specification: Specification, repository_key: str):
         self.specification = specification
         self.repository_key = repository_key
 
