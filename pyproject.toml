@@ -4,6 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [tool.flit.metadata]
 module = "fractal"
+dist-name = "fractal-toolkit"
 author = "Douwe van der Meij"
 author-email = "douwe@karibu-online.nl"
 home-page = "https://github.com/douwevandermeij/fractal"
