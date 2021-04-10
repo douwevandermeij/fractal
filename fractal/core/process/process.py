@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from fractal.core.process.action import Action
 from fractal.core.process.process_scope import ProcessScope
