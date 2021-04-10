@@ -17,7 +17,7 @@ class ProcessScope:
     def __repr__(self):
         return self.data.__repr__()
 
-    def update(self, scope: 'ProcessScope') -> 'ProcessScope':
+    def update(self, scope: "ProcessScope") -> "ProcessScope":
         self.data.update(scope.data)
         return self
 

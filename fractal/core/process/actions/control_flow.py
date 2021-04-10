@@ -7,7 +7,12 @@ from fractal.core.specifications.generic.specification import Specification
 
 
 class IfElseAction(Action):
-    def __init__(self, specification: Specification, process_true: Process, process_false: Optional[Process] = None):
+    def __init__(
+        self,
+        specification: Specification,
+        process_true: Process,
+        process_false: Optional[Process] = None,
+    ):
         self.specification = specification
         self.process_true = process_true
         self.process_false = process_false

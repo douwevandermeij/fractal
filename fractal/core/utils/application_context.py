@@ -76,6 +76,6 @@ class ApplicationContext(object):
     def install_service(self, service, *, name=""):
         if not name:
             name = camel_to_snake(service.__name__)
-        setattr(ApplicationContext, name, property(
-            lambda self: next(service.install(self))
-        ))
+        setattr(
+            ApplicationContext, name, property(lambda self: next(service.install(self)))
+        )
