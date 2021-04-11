@@ -3,7 +3,7 @@
 
 coverage:  ## Run tests with coverage
 	python -m coverage erase
-	python -m coverage run -m pytest -ra --cov=fractal
+	python -m coverage run -m pytest -ra
 	python -m coverage report -m
 
 deps:  ## Install dependencies
