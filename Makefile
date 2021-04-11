@@ -3,12 +3,12 @@
 
 coverage:  ## Run tests with coverage
 	python -m coverage erase
-	python -m coverage run --include=fractal/* -m pytest -ra
+	python -m coverage run -m pytest -ra --cov=fractal
 	python -m coverage report -m
 
 deps:  ## Install dependencies
 	python -m pip install --upgrade pip
-	python -m pip install black coverage flake8 flit mccabe mypy pylint pytest tox tox-gh-actions
+	python -m pip install black coverage flake8 flit mccabe mypy pylint pytest pytest-cov tox tox-gh-actions
 
 lint:  ## Lint and static-check
 	python -m flake8 fractal

@@ -7,7 +7,7 @@ from fractal.core.specifications.id_specification import IdSpecification
 
 
 class ObjectOfAccountSpecification(Specification):
-    def __init__(self, object_id: str, account_id: str):
+    def __init__(self, object_id: Any, account_id: Any):
         self.specification = AndSpecification(
             [
                 AccountIdSpecification(account_id),

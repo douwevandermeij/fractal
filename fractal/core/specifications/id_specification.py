@@ -4,7 +4,7 @@ from fractal.core.specifications.generic.specification import Specification
 
 
 class IdSpecification(Specification):
-    def __init__(self, id: str):
+    def __init__(self, id: Any):
         self.id = id
 
     def is_satisfied_by(self, obj: Any) -> bool:
