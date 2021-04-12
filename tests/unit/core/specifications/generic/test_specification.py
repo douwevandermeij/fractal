@@ -1,3 +1,5 @@
+from dataclasses import make_dataclass
+
 from fractal.core.specifications.generic.collections import AndSpecification
 from fractal.core.specifications.generic.operators import (
     ContainsSpecification,
@@ -37,3 +39,31 @@ def test_parse():
     assert Specification.parse(id__gt=1, name__contains="a") == AndSpecification(
         [GreaterThenSpecification("id", 1), ContainsSpecification("name", "a")]
     )
+
+
+def test_specification_and():
+    spec = EqualsSpecification("id", 1).And(EqualsSpecification("name", "a"))
+    DC = make_dataclass("DC", [("id", int), ("name", str)])
+    assert spec.is_satisfied_by(DC(**dict(id=1, name="a")))
+
+
+def test_specification_or():
+    spec = EqualsSpecification("id", 1).Or(EqualsSpecification("name", "a"))
+    DC = make_dataclass("DC", [("id", int), ("name", str)])
+    assert spec.is_satisfied_by(DC(**dict(id=1, name="a")))
+
+
+def test_specification_not_and():
+    spec = Specification.Not(
+        EqualsSpecification("id", 1).And(EqualsSpecification("name", "a"))
+    )
+    DC = make_dataclass("DC", [("id", int), ("name", str)])
+    assert spec.is_satisfied_by(DC(**dict(id=1, name="b")))
+
+
+def test_specification_not_or():
+    spec = Specification.Not(
+        EqualsSpecification("id", 1).Or(EqualsSpecification("name", "a"))
+    )
+    DC = make_dataclass("DC", [("id", int), ("name", str)])
+    assert spec.is_satisfied_by(DC(**dict(id=2, name="b")))

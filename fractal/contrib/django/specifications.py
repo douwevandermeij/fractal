@@ -56,7 +56,7 @@ class DjangoOrmSpecificationBuilder:
                 ],
             )
         elif isinstance(specification, InSpecification):
-            return {f"{specification.field}__in": specification.values}
+            return {f"{specification.field}__in": specification.value}
         elif isinstance(specification, EqualsSpecification):
             return {specification.field: specification.value}
         elif isinstance(specification, LessThenSpecification):

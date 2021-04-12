@@ -43,7 +43,7 @@ class MongoSpecificationBuilder:
                 ]
             }
         elif isinstance(specification, InSpecification):
-            return {specification.field: {"$in": specification.values}}
+            return {specification.field: {"$in": specification.value}}
         elif isinstance(specification, EqualsSpecification):
             return {specification.field: {"$eq": specification.value}}
         elif isinstance(specification, LessThenSpecification):

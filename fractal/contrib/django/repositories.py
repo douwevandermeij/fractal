@@ -25,13 +25,13 @@ class DjangoModelRepositoryMixin(Repository[Entity]):
             return self.add(entity)
 
     def __get_obj(self, specification: Specification):
-        filter = DjangoOrmSpecificationBuilder.build(specification)
-        if type(filter) is list:
-            obj = self.django_model.objects.get(*filter)
-        elif type(filter) is dict:
-            obj = self.django_model.objects.get(**filter)
-        elif type(filter) is Q:
-            obj = self.django_model.objects.get(filter)
+        _filter = DjangoOrmSpecificationBuilder.build(specification)
+        if type(_filter) is list:
+            obj = self.django_model.objects.get(*_filter)
+        elif type(_filter) is dict:
+            obj = self.django_model.objects.get(**_filter)
+        elif type(_filter) is Q:
+            obj = self.django_model.objects.get(_filter)
         else:
             raise self.django_model.DoesNotExist
         return obj
@@ -45,13 +45,13 @@ class DjangoModelRepositoryMixin(Repository[Entity]):
     def find(
         self, specification: Specification = None
     ) -> Generator[Entity, None, None]:
-        filter = DjangoOrmSpecificationBuilder.build(specification)
-        if type(filter) is list:
-            queryset = self.django_model.objects.filter(*filter)
-        elif type(filter) is dict:
-            queryset = self.django_model.objects.filter(**filter)
-        elif type(filter) is Q:
-            queryset = self.django_model.objects.filter(filter)
+        _filter = DjangoOrmSpecificationBuilder.build(specification)
+        if type(_filter) is list:
+            queryset = self.django_model.objects.filter(*_filter)
+        elif type(_filter) is dict:
+            queryset = self.django_model.objects.filter(**_filter)
+        elif type(_filter) is Q:
+            queryset = self.django_model.objects.filter(_filter)
         else:
             queryset = self.django_model.objects.all()
 

@@ -11,10 +11,12 @@ deps:  ## Install dependencies
 	python -m pip install black coverage flake8 flit isort mccabe mypy pylint pytest pytest-cov tox tox-gh-actions
 
 lint:  ## Lint and static-check
+	python -m black tests
+	python -m isort tests
 	python -m black fractal
 	python -m isort fractal
 	python -m flake8 fractal
-	python -m pylint fractal
+	#python -m pylint fractal
 	python -m mypy fractal
 
 publish:  ## Publish to PyPi

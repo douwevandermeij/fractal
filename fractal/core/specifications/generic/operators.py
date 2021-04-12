@@ -29,7 +29,7 @@ class FieldValueSpecification(Specification):
         self.value = value
 
     def __str__(self):
-        return f"{self.__class__.__name__}({self.field}={self.value})"  # NOQA
+        return f"{self.__class__.__name__}({self.field}={self.value})"
 
     def __eq__(self, other):
         return (

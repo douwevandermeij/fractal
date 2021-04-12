@@ -25,6 +25,12 @@ class Specification(ABC):
         return self.__class__.__name__
 
     @staticmethod
+    def Not(specification: "Specification") -> "Specification":
+        from fractal.core.specifications.generic.operators import NotSpecification
+
+        return NotSpecification(specification)
+
+    @staticmethod
     def parse(**kwargs):
         def __parse(**kwargs):
             for k, v in kwargs.items():
