@@ -41,6 +41,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# SonarQube
+sonar-project.properties
+
 # Translations
 *.mo
 

@@ -1,6 +1,8 @@
 from dataclasses import make_dataclass
 
-from fractal.core.specifications.object_of_account_specification import ObjectOfAccountSpecification
+from fractal.core.specifications.object_of_account_specification import (
+    ObjectOfAccountSpecification,
+)
 
 
 def test_equals():

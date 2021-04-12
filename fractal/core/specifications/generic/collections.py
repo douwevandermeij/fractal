@@ -18,6 +18,9 @@ class CollectionSpecification(Specification):
     def __str__(self):
         return f"{self.__class__.__name__}({','.join(map(lambda s: str(s), self.specifications))})"
 
+    def __eq__(self, other):
+        return type(self) == type(other) and self.specifications == other.specifications
+
 
 class AndSpecification(CollectionSpecification):
     def is_satisfied_by(self, obj: Any) -> bool:

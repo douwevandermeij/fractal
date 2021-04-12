@@ -1,14 +1,8 @@
-from typing import Any, Collection
+from typing import Any
 
-from fractal.core.specifications.generic.specification import Specification
+from fractal.core.specifications.generic.operators import EqualsSpecification
 
 
-class UserIdSpecification(Specification):
+class UserIdSpecification(EqualsSpecification):
     def __init__(self, user_id: Any):
-        self.user_id = user_id
-
-    def is_satisfied_by(self, obj: Any) -> bool:
-        return obj.user_id == self.user_id
-
-    def to_collection(self) -> Collection:
-        return dict(user_id=self.user_id)
+        super(UserIdSpecification, self).__init__("user_id", user_id)

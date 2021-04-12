@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: coverage deps help lint publish push test tox
+.PHONY: coverage deps help lint publish push sonar test tox
 
 coverage:  ## Run tests with coverage
 	python -m coverage erase
@@ -8,9 +8,11 @@ coverage:  ## Run tests with coverage
 
 deps:  ## Install dependencies
 	python -m pip install --upgrade pip
-	python -m pip install black coverage flake8 flit mccabe mypy pylint pytest pytest-cov tox tox-gh-actions
+	python -m pip install black coverage flake8 flit isort mccabe mypy pylint pytest pytest-cov tox tox-gh-actions
 
 lint:  ## Lint and static-check
+	python -m black fractal
+	python -m isort fractal
 	python -m flake8 fractal
 	python -m pylint fractal
 	python -m mypy fractal
@@ -20,6 +22,11 @@ publish:  ## Publish to PyPi
 
 push:  ## Push code with tags
 	git push && git push --tags
+
+sonar:  ## Run tests
+	make coverage
+	python -m coverage xml
+	sonar-scanner
 
 test:  ## Run tests
 	python -m pytest -ra
