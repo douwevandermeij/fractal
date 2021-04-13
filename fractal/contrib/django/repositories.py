@@ -14,15 +14,28 @@ class DjangoModelRepositoryMixin(Repository[Entity]):
         self.domain_model = domain_model
 
     def add(self, entity: Entity) -> Entity:
-        self.django_model.objects.create(**asdict(entity))
+        direct_data, related_data = self.__get_direct_related_data(entity)
+        obj = self.django_model.objects.create(**direct_data)
+        entity.id = obj.id
         return entity
 
     def update(self, entity: Entity, upsert=False) -> Entity:
         if entities := self.django_model.objects.filter(pk=entity.id):
-            entities.update(**asdict(entity))
+            direct_data, related_data = self.__get_direct_related_data(entity)
+            entities.update(**direct_data)
             return self.django_model.objects.get(pk=entity.id)
         elif upsert:
             return self.add(entity)
+
+    def __get_direct_related_data(self, entity: Entity):
+        direct_data = {}
+        related_data = {}
+        for k, v in asdict(entity).items():
+            if type(v) == list:
+                related_data[k] = v
+            else:
+                direct_data[k] = v
+        return direct_data, related_data
 
     def __get_obj(self, specification: Specification):
         _filter = DjangoOrmSpecificationBuilder.build(specification)
