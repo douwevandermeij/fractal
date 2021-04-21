@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from typing import Dict, Generator, Optional, Type
 
-from django.db.models import Model, Q
+from django.db.models import Model, Q, ForeignKey
 
 from fractal.contrib.django.specifications import DjangoOrmSpecificationBuilder
 from fractal.core.repositories import Entity, Repository
@@ -30,11 +30,19 @@ class DjangoModelRepositoryMixin(Repository[Entity]):
     def __get_direct_related_data(self, entity: Entity):
         direct_data = {}
         related_data = {}
+
+        def field_name(field):
+            if type(field) is ForeignKey:
+                return field.name + "_id"
+            return field.name
+
+        direct_fields = [field_name(f) for f in self.django_model._meta.fields]
         for k, v in asdict(entity).items():
             if type(v) == list:
                 related_data[k] = v
             else:
-                direct_data[k] = v
+                if k in direct_fields:
+                    direct_data[k] = v
         return direct_data, related_data
 
     def __get_obj(self, specification: Specification):
