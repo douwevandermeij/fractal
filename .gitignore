@@ -43,6 +43,7 @@ cover/
 
 # SonarQube
 sonar-project.properties
+.scannerwork
 
 # Translations
 *.mo
@@ -75,7 +76,6 @@ __pycache__
 .pytest_cache
 htmlcov
 site
-coverage.xml
 .netlify
 test.db
 log.txt

@@ -25,7 +25,7 @@ publish:  ## Publish to PyPi
 push:  ## Push code with tags
 	git push && git push --tags
 
-sonar:  ## Run tests
+sonar:  ## Run sonar-scanner
 	make coverage
 	python -m coverage xml
 	sonar-scanner

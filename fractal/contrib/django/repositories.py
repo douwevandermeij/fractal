@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from typing import Dict, Generator, Optional, Type
 
-from django.db.models import Model, Q, ForeignKey
+from django.db.models import ForeignKey, Model, Q
 
 from fractal.contrib.django.specifications import DjangoOrmSpecificationBuilder
 from fractal.core.repositories import Entity, Repository

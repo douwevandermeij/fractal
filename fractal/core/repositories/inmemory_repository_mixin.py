@@ -17,8 +17,8 @@ class InMemoryRepositoryMixin(Repository[Entity]):
             return self.add(entity)
 
     def remove_one(self, specification: Specification):
-        if self.find_one(specification):
-            del self.entities[id]
+        if obj := self.find_one(specification):
+            del self.entities[obj.id]
 
     def find_one(self, specification: Specification) -> Optional[Entity]:
         for entity in filter(
@@ -27,7 +27,7 @@ class InMemoryRepositoryMixin(Repository[Entity]):
             return entity
 
     def find(
-        self, specification: Specification = None
+        self, specification: Optional[Specification] = None
     ) -> Generator[Entity, None, None]:
         if specification:
             entities = filter(

@@ -32,7 +32,3 @@ class Repository(Generic[Entity], ABC):
     @abstractmethod
     def is_healthy(self) -> bool:
         raise NotImplementedError
-
-    @abstractmethod
-    def process(self) -> bool:
-        raise NotImplementedError

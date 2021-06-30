@@ -2,4 +2,5 @@ from fractal.core.models import EnumModel
 
 
 class Role(EnumModel):
-    pass
+    OWNER = "role.owner"
+    ADMIN = "role.admin"

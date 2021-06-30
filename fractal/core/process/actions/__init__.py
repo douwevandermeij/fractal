@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fractal.core.process.action import Action
 from fractal.core.process.process_scope import ProcessScope
 from fractal.core.specifications.generic.specification import Specification
@@ -54,11 +56,51 @@ class AddEntityAction(Action):
         return scope
 
 
+class UpdateEntityAction(Action):
+    def __init__(self, repository_key: str = "repository"):
+        self.repository_key = repository_key
+
+    def execute(self, scope: ProcessScope) -> ProcessScope:
+        entity = scope["entity"].update(scope["contract"])
+        scope["entity"] = scope[self.repository_key].update(entity)
+        return scope
+
+
 class FetchEntityAction(Action):
-    def __init__(self, specification: Specification, repository_key: str):
+    def __init__(
+        self, specification: Specification, repository_key: str = "repository"
+    ):
         self.specification = specification
         self.repository_key = repository_key
 
     def execute(self, scope: ProcessScope) -> ProcessScope:
         scope["entity"] = scope[self.repository_key].find_one(self.specification)
+        return scope
+
+
+class FindEntitiesAction(Action):
+    def __init__(
+        self,
+        specification: Optional[Specification] = None,
+        repository_key: str = "repository",
+    ):
+        self.specification = specification
+        self.repository_key = repository_key
+
+    def execute(self, scope: ProcessScope) -> ProcessScope:
+        scope["entities"] = scope["entity"] = scope[self.repository_key].find(
+            self.specification
+        )
+        return scope
+
+
+class DeleteEntityAction(Action):
+    def __init__(
+        self, specification: Specification, repository_key: str = "repository"
+    ):
+        self.specification = specification
+        self.repository_key = repository_key
+
+    def execute(self, scope: ProcessScope) -> ProcessScope:
+        scope[self.repository_key].remove_one(self.specification)
         return scope
