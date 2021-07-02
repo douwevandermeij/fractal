@@ -1,13 +1,11 @@
 import uuid
 from dataclasses import dataclass, field
-from typing import Generic, List, TypeVar
+from typing import List
 
-from fractal.core.event_sourcing.event import Event
-
-E = TypeVar("E", bound=Event)
+from fractal.core.event_sourcing.event import BasicSendingEvent
 
 
 @dataclass
-class EventStream(Generic[E]):
+class EventStream:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    events: List[E] = field(default_factory=list)
+    events: List[BasicSendingEvent] = field(default_factory=list)

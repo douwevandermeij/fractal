@@ -10,3 +10,13 @@ class DomainException(Exception):
             self.code = code
         self.payload = payload
         self.headers = headers
+
+
+class AggregateRootError(DomainException):
+    code = "AGGREGATE_ROOT_ERROR"
+    status_code = 405
+
+    def __init__(self, message=None):
+        if not message:
+            message = "Actions can only be taken on aggregate root objects."
+        super(AggregateRootError, self).__init__(message)

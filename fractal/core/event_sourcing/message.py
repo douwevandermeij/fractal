@@ -7,6 +7,6 @@ from typing import Any
 class Message:
     id: str
     occurred_on: datetime
-    event_type: str
-    event: Any
+    event: str
+    data: Any
     object_id: str
