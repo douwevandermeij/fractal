@@ -14,8 +14,8 @@ class PrintEventProjector(EventProjector):
         message = Message(
             id=id,
             occurred_on=datetime.datetime.now(tz=datetime.timezone.utc),
-            event_type=event.__class__.__name__,
-            event=event,
+            event=event.__class__.__name__,
+            data=event,
             object_id=str(event.object_id),
         )
         print(json.dumps(asdict(message), cls=EnhancedEncoder))

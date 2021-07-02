@@ -6,6 +6,7 @@ from typing import List, Tuple
 from dotenv import load_dotenv
 
 from fractal import FractalException
+from fractal.core.event_sourcing.event_publisher import EventPublisher
 from fractal.core.repositories import Repository
 from fractal.core.services import Service
 from fractal.core.utils.loggers import init_logging
@@ -33,6 +34,7 @@ class ApplicationContext(object):
         self.load_repositories()
         self.load_ingress_services()
         self.load_egress_services()
+        self.event_publisher = EventPublisher(self.load_event_projectors())
         self.load_command_bus()
 
         for repository in self.repositories:
@@ -59,9 +61,7 @@ class ApplicationContext(object):
         pass
 
     def load_internal_services(self):
-        from fractal.core.event_sourcing.event_publisher import EventPublisher
-
-        self.event_publisher = EventPublisher(self.load_event_projectors())
+        pass
 
     def load_event_projectors(self):
         return []

@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
@@ -10,12 +11,16 @@ class Event(object):
 
 
 @dataclass
-class SendingEvent(Event):
-    command: Command
-
+class BasicSendingEvent(Event, ABC):
     @property
+    @abstractmethod
     def object_id(self):
         raise NotImplementedError
+
+
+@dataclass
+class SendingEvent(BasicSendingEvent, ABC):
+    command: Command
 
     @staticmethod
     def to_event(event: Any):
