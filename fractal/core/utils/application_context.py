@@ -32,10 +32,10 @@ class ApplicationContext(object):
 
         self.load_internal_services()
         self.load_repositories()
-        self.load_ingress_services()
         self.load_egress_services()
         self.event_publisher = EventPublisher(self.load_event_projectors())
         self.load_command_bus()
+        self.load_ingress_services()
 
         for repository in self.repositories:
             repository.is_healthy()
