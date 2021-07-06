@@ -6,7 +6,7 @@ from typing import Dict, Generator, Generic, List, Optional, TypeVar
 
 from sqlalchemy import MetaData, Table, create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import IntegrityError, InterfaceError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Mapper, Session, sessionmaker
 
 from fractal.contrib.sqlalchemy.specifications import SqlAlchemyOrmSpecificationBuilder
