@@ -5,9 +5,7 @@ from fractal.core.specifications.generic.collections import (
     AndSpecification,
     OrSpecification,
 )
-from fractal.core.specifications.generic.operators import (
-    EqualsSpecification,
-)
+from fractal.core.specifications.generic.operators import EqualsSpecification
 from fractal.core.specifications.generic.specification import Specification
 
 

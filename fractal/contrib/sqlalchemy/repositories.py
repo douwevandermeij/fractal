@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, Optional, TypeVar, Generic
+from typing import Dict, Generator, Generic, List, Optional, TypeVar
 
-from fractal.core.specifications.id_specification import IdSpecification
 from sqlalchemy import MetaData, Table, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError, InterfaceError
@@ -13,6 +12,7 @@ from sqlalchemy.orm import Mapper, Session, sessionmaker
 from fractal.contrib.sqlalchemy.specifications import SqlAlchemyOrmSpecificationBuilder
 from fractal.core.repositories import Entity, Repository
 from fractal.core.specifications.generic.specification import Specification
+from fractal.core.specifications.id_specification import IdSpecification
 
 EntityDao = TypeVar("EntityDao")
 
@@ -85,7 +85,9 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.session.rollback()
 
 
-class SqlAlchemyRepositoryMixin(Generic[Entity, EntityDao], Repository[Entity], SqlAlchemyUnitOfWork):
+class SqlAlchemyRepositoryMixin(
+    Generic[Entity, EntityDao], Repository[Entity], SqlAlchemyUnitOfWork
+):
     entity = Entity
     entity_dao = EntityDao
     application_mapper = DaoMapper
@@ -129,41 +131,36 @@ class SqlAlchemyRepositoryMixin(Generic[Entity, EntityDao], Repository[Entity], 
         if entity:
             return self.entity(**entity.__dict__)
 
+    def find(
+        self, specification: Optional[Specification] = None
+    ) -> Generator[Entity, None, None]:
+        entities = self._find_raw(specification)
+
+        if specification:
+            entities = filter(lambda i: specification.is_satisfied_by(i), entities)
+        for entity in entities:
+            d = entity.__dict__
+            if "_sa_instance_state" in d:
+                del d["_sa_instance_state"]
+            yield self.entity(**d)
+
     def _find_one_raw(self, specification: Specification) -> Optional[Entity]:
+        entities = self._find_raw(specification)
+
+        for entity in filter(lambda i: specification.is_satisfied_by(i), entities):
+            return entity
+
+    def _find_raw(self, specification: Optional[Specification]) -> List[Entity]:
         _filter = SqlAlchemyOrmSpecificationBuilder.build(specification)
         if isinstance(_filter, list):
             entities = []
             for f in _filter:
-                entities = self.session.query(self.entity_dao).filter_by(**dict(f))
-                try:
-                    entities = list(self.session.query(self.entity_dao).filter_by(**dict(f)))
-                except InterfaceError:
-                    pass
-                else:
-                    break
+                entities.extend(
+                    list(self.session.query(self.entity_dao).filter_by(**dict(f)))
+                )
         else:
             entities = self.session.query(self.entity_dao).filter_by(**dict(_filter))
-
-        for entity in filter(
-            lambda i: specification.is_satisfied_by(i), entities
-        ):
-            return entity
-
-    def find(
-        self, specification: Optional[Specification] = None
-    ) -> Generator[Entity, None, None]:
-        with self:
-            entities = self.session.query(self.entity_dao).all()
-
-            if specification:
-                entities = filter(
-                    lambda i: specification.is_satisfied_by(i), entities.values()
-                )
-            for entity in entities:
-                d = entity.__dict__
-                if "_sa_instance_state" in d:
-                    del d["_sa_instance_state"]
-                yield self.entity(**d)
+        return entities
 
     def is_healthy(self) -> bool:
         try:
