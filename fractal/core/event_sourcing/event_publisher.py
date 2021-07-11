@@ -18,7 +18,7 @@ class EventPublisher:
             )
         )
 
-    def publish_events(self,events: List[BasicSendingEvent]):
+    def publish_events(self, events: List[BasicSendingEvent]):
         self._publish(
             EventStream(
                 events=events,

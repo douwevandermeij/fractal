@@ -64,7 +64,9 @@ class ObjectEventStore(BasicEventStore):
                 )
             )
 
-    def get_event_stream(self, specification: Optional[Specification] = None) -> EventStream:
+    def get_event_stream(
+        self, specification: Optional[Specification] = None
+    ) -> EventStream:
         return EventStream(
             events=list(
                 map(lambda m: m.data, self.event_store_repository.find(specification))
@@ -93,7 +95,9 @@ class DictEventStore(BasicEventStore):
                 )
             )
 
-    def get_event_stream(self, specification: Optional[Specification] = None) -> EventStream:
+    def get_event_stream(
+        self, specification: Optional[Specification] = None
+    ) -> EventStream:
         events = []
         for m in self.event_store_repository.find(specification):
             if event := self.events.get(m.event, None):
@@ -126,7 +130,9 @@ class JsonEventStore(BasicEventStore):
                 )
             )
 
-    def get_event_stream(self, specification: Optional[Specification] = None) -> EventStream:
+    def get_event_stream(
+        self, specification: Optional[Specification] = None
+    ) -> EventStream:
         events = []
         for m in self.event_store_repository.find(specification):
             if event := self.events.get(m.event, None):
@@ -157,7 +163,9 @@ class PickleEventStore(BasicEventStore):
                 )
             )
 
-    def get_event_stream(self, specification: Optional[Specification] = None) -> EventStream:
+    def get_event_stream(
+        self, specification: Optional[Specification] = None
+    ) -> EventStream:
         events = []
         for m in self.event_store_repository.find(specification):
             events.append(pickle.loads(m.data))

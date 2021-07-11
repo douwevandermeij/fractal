@@ -1,7 +1,6 @@
-import jwt
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from jwt import DecodeError, ExpiredSignatureError
+from jose import ExpiredSignatureError, JWTError, jwt
 
 from fractal.core.exceptions import DomainException
 
@@ -30,10 +29,10 @@ class JwtUtils:
     def get_token_payload(self, token: str = Depends(oauth2_scheme)):
         try:
             payload = jwt.decode(token, self.JWT_PUBLIC_KEY, algorithms="RS256")
-        except DecodeError:
-            raise TokenInvalidException()
         except ExpiredSignatureError:
             raise TokenExpiredException("The supplied token is expired!")
+        except JWTError:
+            raise TokenInvalidException()
         if payload["typ"] not in ["access", "refresh"]:
             raise TokenInvalidException()
         return payload

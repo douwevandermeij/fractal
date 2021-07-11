@@ -5,8 +5,7 @@ from calendar import timegm
 from datetime import datetime
 from typing import Dict
 
-import jwt
-from jwt import DecodeError, ExpiredSignatureError
+from jose import ExpiredSignatureError, JWTError, jwt
 
 from fractal.contrib.tokens.exceptions import (
     TokenExpiredException,
@@ -101,10 +100,10 @@ class SymmetricJwtTokenService(TokenService):
     def verify(self, token: str):
         try:
             payload = jwt.decode(token, self.secret, algorithms=self.algorithm)
-        except DecodeError:
-            raise TokenInvalidException("The supplied token is invalid!")
         except ExpiredSignatureError:
             raise TokenExpiredException("The supplied token is expired!")
+        except JWTError:
+            raise TokenInvalidException("The supplied token is invalid!")
         if payload["typ"] != "access":
             raise TokenInvalidException("The supplied token is invalid!")
         return payload
@@ -143,10 +142,10 @@ class AsymmetricJwtTokenService(TokenService):
     def verify(self, token: str):
         try:
             payload = jwt.decode(token, self.public_key, algorithms=self.algorithm)
-        except DecodeError:
-            raise TokenInvalidException("The supplied token is invalid!")
         except ExpiredSignatureError:
             raise TokenExpiredException("The supplied token is expired!")
+        except JWTError:
+            raise TokenInvalidException("The supplied token is invalid!")
         if payload["typ"] not in ["access", "refresh"]:
             raise TokenInvalidException("The supplied token is invalid!")
         return payload
