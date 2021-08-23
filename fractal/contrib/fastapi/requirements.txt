@@ -1,6 +1,6 @@
+cryptography
 dnspython
 fastapi
-pyjwt
+python-jose
 python-multipart
-sentry-sdk
 uvicorn

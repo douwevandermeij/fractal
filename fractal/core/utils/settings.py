@@ -1,3 +1,4 @@
+import os
 from io import StringIO
 
 from dotenv import load_dotenv
@@ -10,7 +11,10 @@ class Settings(object):
         if not isinstance(cls.instance, cls):
             cls.instance = object.__new__(cls, *args, **kwargs)
             if dotenv:
-                load_dotenv()
+                dotenv_path = None
+                if root_dir := getattr(cls, "ROOT_DIR", None):
+                    dotenv_path = os.path.join(root_dir, ".env")
+                load_dotenv(dotenv_path)
             cls.instance.load()
         return cls.instance
 

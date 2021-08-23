@@ -1,6 +1,6 @@
 from typing import List
 
-from fractal.core.event_sourcing.event import Event
+from fractal.core.event_sourcing.event import BasicSendingEvent
 from fractal.core.event_sourcing.event_projector import EventProjector
 from fractal.core.event_sourcing.event_stream import EventStream
 
@@ -9,7 +9,7 @@ class EventPublisher:
     def __init__(self, projectors: List[EventProjector]):
         self.projectors = projectors
 
-    def publish_event(self, event: Event):
+    def publish_event(self, event: BasicSendingEvent):
         self._publish(
             EventStream(
                 events=[
@@ -18,7 +18,7 @@ class EventPublisher:
             )
         )
 
-    def publish_events(self, events: List[Event]):
+    def publish_events(self, events: List[BasicSendingEvent]):
         self._publish(
             EventStream(
                 events=events,

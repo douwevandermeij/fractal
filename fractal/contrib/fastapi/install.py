@@ -1,9 +1,15 @@
 import logging
 
-import sentry_sdk
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+except ImportError:
+    sentry = False
+else:
+    sentry = True
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -13,20 +19,21 @@ from fractal.core.utils.settings import Settings
 
 
 def install_fastapi(settings: Settings):
-    app = FastAPI(root_path=settings.OPENAPI_PREFIX_PATH)
+    app = FastAPI(root_path=getattr(settings, "OPENAPI_PREFIX_PATH", ""))
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOW_ORIGINS,
+        allow_origins=getattr(settings, "ALLOW_ORIGINS", ""),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    sentry_sdk.init(dsn=settings.SENTRY_DSN)
-    app.add_middleware(
-        SentryAsgiMiddleware,
-    )
+    if sentry:
+        sentry_sdk.init(dsn=getattr(settings, "SENTRY_DSN", ""))
+        app.add_middleware(
+            SentryAsgiMiddleware,
+        )
 
     @app.exception_handler(DomainException)
     def unicorn_exception_handler(request: Request, exc: DomainException):

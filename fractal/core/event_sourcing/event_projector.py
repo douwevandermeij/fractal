@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Type
 
-from fractal.core.event_sourcing.event import SendingEvent
+from fractal.core.event_sourcing.event import BasicSendingEvent
 
 
 class EventProjector(ABC):
     @abstractmethod
-    def project(self, id: str, event: Type[SendingEvent]):
+    def project(self, id: str, event: BasicSendingEvent):
         pass
