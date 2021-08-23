@@ -8,7 +8,7 @@ coverage:  ## Run tests with coverage
 
 deps:  ## Install dependencies
 	python -m pip install --upgrade pip
-	python -m pip install black coverage flake8 flit isort mccabe mypy pylint pytest pytest-cov tox tox-gh-actions
+	python -m pip install black coverage fastapi flake8 flit isort mccabe mypy pylint pytest pytest-cov pytest-lazy-fixture requests sqlalchemy tox tox-gh-actions
 
 lint:  ## Lint and static-check
 	python -m black tests
