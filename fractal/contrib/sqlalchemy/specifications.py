@@ -35,8 +35,7 @@ class SqlAlchemyOrmSpecificationBuilder:
         elif isinstance(specification, EqualsSpecification):
             return {specification.field: specification.value}
         elif isinstance(specification.to_collection(), dict):
-            for key, value in dict(specification.to_collection()).items():
-                return {key: value}
+            return specification.to_collection()
         raise SpecificationNotMappedToSqlAlchemyOrm(
             f"Specification '{specification}' not mapped to SqlAlchemy Orm query."
         )

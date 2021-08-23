@@ -1,5 +1,3 @@
-import json
-import pickle
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import asdict
@@ -119,6 +117,8 @@ class JsonEventStore(BasicEventStore):
         self.json_encoder = json_encoder
 
     def commit(self, event_stream: EventStream, aggregate: str, version: int):
+        import json
+
         for event in event_stream.events:
             self.event_store_repository.add(
                 Message(
@@ -133,6 +133,8 @@ class JsonEventStore(BasicEventStore):
     def get_event_stream(
         self, specification: Optional[Specification] = None
     ) -> EventStream:
+        import json
+
         events = []
         for m in self.event_store_repository.find(specification):
             if event := self.events.get(m.event, None):
@@ -152,6 +154,8 @@ class PickleEventStore(BasicEventStore):
         self.events = {e.__name__: e for e in events}
 
     def commit(self, event_stream: EventStream, aggregate: str, version: int):
+        import pickle
+
         for event in event_stream.events:
             self.event_store_repository.add(
                 Message(
@@ -166,6 +170,8 @@ class PickleEventStore(BasicEventStore):
     def get_event_stream(
         self, specification: Optional[Specification] = None
     ) -> EventStream:
+        import pickle
+
         events = []
         for m in self.event_store_repository.find(specification):
             events.append(pickle.loads(m.data))

@@ -19,7 +19,7 @@ class Settings(object):
         return cls.instance
 
     def load(self):
-        pass
+        """Define here your settings."""
 
     def reload(self, defaults: dict):
         filelike = StringIO("\n".join([f"{k}={v}" for k, v, in defaults.items()]))

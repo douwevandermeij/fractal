@@ -55,22 +55,22 @@ class EqualsSpecification(FieldValueSpecification):
         return getattr(obj, self.field) == self.value
 
 
-class LessThenSpecification(FieldValueSpecification):
+class LessThanSpecification(FieldValueSpecification):
     def is_satisfied_by(self, obj: Any) -> bool:
         return getattr(obj, self.field) < self.value
 
 
-class LessThenEqualSpecification(FieldValueSpecification):
+class LessThanEqualSpecification(FieldValueSpecification):
     def is_satisfied_by(self, obj: Any) -> bool:
         return getattr(obj, self.field) <= self.value
 
 
-class GreaterThenSpecification(FieldValueSpecification):
+class GreaterThanSpecification(FieldValueSpecification):
     def is_satisfied_by(self, obj: Any) -> bool:
         return getattr(obj, self.field) > self.value
 
 
-class GreaterThenEqualSpecification(FieldValueSpecification):
+class GreaterThanEqualSpecification(FieldValueSpecification):
     def is_satisfied_by(self, obj: Any) -> bool:
         return getattr(obj, self.field) >= self.value
 

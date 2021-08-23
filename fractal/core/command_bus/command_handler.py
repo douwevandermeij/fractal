@@ -7,8 +7,8 @@ from fractal.core.command_bus.command import Command
 class CommandHandler(ABC):
     @abstractmethod
     def commands(self) -> List[Type[Command]]:
-        pass
+        """Returns list of commands that this handler can handle."""
 
     @abstractmethod
     def handle(self, command: Command):
-        pass
+        """Handle command, might return a value."""

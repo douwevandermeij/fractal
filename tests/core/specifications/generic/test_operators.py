@@ -3,11 +3,11 @@ from dataclasses import make_dataclass
 from fractal.core.specifications.generic.operators import (
     ContainsSpecification,
     EqualsSpecification,
-    GreaterThenEqualSpecification,
-    GreaterThenSpecification,
+    GreaterThanEqualSpecification,
+    GreaterThanSpecification,
     InSpecification,
-    LessThenEqualSpecification,
-    LessThenSpecification,
+    LessThanEqualSpecification,
+    LessThanSpecification,
     NotSpecification,
 )
 
@@ -30,26 +30,26 @@ def test_equals_specification():
     assert spec.is_satisfied_by(DC(**dict(id=1)))
 
 
-def test_less_then_specification():
-    spec = LessThenSpecification("id", 2)
+def test_less_than_specification():
+    spec = LessThanSpecification("id", 2)
     DC = make_dataclass("DC", [("id", int)])
     assert spec.is_satisfied_by(DC(**dict(id=1)))
 
 
-def test_less_then_equal_specification():
-    spec = LessThenEqualSpecification("id", 1)
+def test_less_than_equal_specification():
+    spec = LessThanEqualSpecification("id", 1)
     DC = make_dataclass("DC", [("id", int)])
     assert spec.is_satisfied_by(DC(**dict(id=1)))
 
 
-def test_greater_then_specification():
-    spec = GreaterThenSpecification("id", 1)
+def test_greater_than_specification():
+    spec = GreaterThanSpecification("id", 1)
     DC = make_dataclass("DC", [("id", int)])
     assert spec.is_satisfied_by(DC(**dict(id=2)))
 
 
-def test_greater_then_equal_specification():
-    spec = GreaterThenEqualSpecification("id", 1)
+def test_greater_than_equal_specification():
+    spec = GreaterThanEqualSpecification("id", 1)
     DC = make_dataclass("DC", [("id", int)])
     assert spec.is_satisfied_by(DC(**dict(id=1)))
 

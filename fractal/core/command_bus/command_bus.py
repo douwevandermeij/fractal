@@ -21,6 +21,14 @@ class CommandBus(CommandHandler):
         for command in handler.commands():
             self.handlers[command.__name__].append(handler)
 
+    async def handle_async(self, command: Command):
+        ret = {}
+        for handler in self.handlers[command.__class__.__name__]:
+            res = await handler.handle(command)
+            if res is not None:
+                ret[handler.__class__.__name__] = res
+        return ret
+
     def handle(self, command: Command):
         ret = {}
         for handler in self.handlers[command.__class__.__name__]:

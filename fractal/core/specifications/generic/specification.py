@@ -57,19 +57,19 @@ class Specification(ABC):
                         )
                     elif op == "lt":
                         from fractal.core.specifications.generic.operators import (
-                            LessThenSpecification as Spec,
+                            LessThanSpecification as Spec,
                         )
                     elif op == "lte":
                         from fractal.core.specifications.generic.operators import (
-                            LessThenEqualSpecification as Spec,
+                            LessThanEqualSpecification as Spec,
                         )
                     elif op == "gt":
                         from fractal.core.specifications.generic.operators import (
-                            GreaterThenSpecification as Spec,
+                            GreaterThanSpecification as Spec,
                         )
                     elif op == "gte":
                         from fractal.core.specifications.generic.operators import (
-                            GreaterThenEqualSpecification as Spec,
+                            GreaterThanEqualSpecification as Spec,
                         )
                     if Spec:
                         yield Spec(field, v)

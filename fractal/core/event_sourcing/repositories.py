@@ -42,15 +42,15 @@ class EventSourcedRepository(Generic[Entity], Repository[Entity]):
         return entity
 
     def remove_one(self, specification: Specification):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def find_one(self, specification: Specification) -> Optional[Entity]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def find(
         self, specification: Specification = None
     ) -> Generator[Entity, None, None]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def is_healthy(self) -> bool:
         return self.event_store.is_healthy()

@@ -27,6 +27,7 @@ def inject_default_routes(context: ApplicationContext):
                 data[i].status_ok = adapters[i].is_healthy()
             except Exception as e:
                 context.logger.error(e)
+                data[i].status_ok = False
         return data
 
     @router.get(Routes.HEALTHZ)

@@ -15,7 +15,7 @@ class EnhancedEncoder(json.JSONEncoder):
         elif isinstance(o, UUID):
             return str(o)
         elif isinstance(o, Decimal):
-            return str(o)
-        elif isinstance(o, object):
+            return f"{o:.2f}"
+        elif isinstance(o, object) and hasattr(o, "__dict__"):
             return o.__dict__
         return super(EnhancedEncoder, self).default(o)

@@ -4,11 +4,11 @@ from fractal.core.specifications.generic.collections import AndSpecification
 from fractal.core.specifications.generic.operators import (
     ContainsSpecification,
     EqualsSpecification,
-    GreaterThenEqualSpecification,
-    GreaterThenSpecification,
+    GreaterThanEqualSpecification,
+    GreaterThanSpecification,
     InSpecification,
-    LessThenEqualSpecification,
-    LessThenSpecification,
+    LessThanEqualSpecification,
+    LessThanSpecification,
 )
 from fractal.core.specifications.generic.specification import Specification
 
@@ -20,10 +20,10 @@ def test_parse():
     assert Specification.parse(id__equals=1) == EqualsSpecification("id", 1)
     assert Specification.parse(id__in=[1]) == InSpecification("id", [1])
     assert Specification.parse(id__contains="a") == ContainsSpecification("id", "a")
-    assert Specification.parse(id__lt=1) == LessThenSpecification("id", 1)
-    assert Specification.parse(id__lte=1) == LessThenEqualSpecification("id", 1)
-    assert Specification.parse(id__gt=1) == GreaterThenSpecification("id", 1)
-    assert Specification.parse(id__gte=1) == GreaterThenEqualSpecification("id", 1)
+    assert Specification.parse(id__lt=1) == LessThanSpecification("id", 1)
+    assert Specification.parse(id__lte=1) == LessThanEqualSpecification("id", 1)
+    assert Specification.parse(id__gt=1) == GreaterThanSpecification("id", 1)
+    assert Specification.parse(id__gte=1) == GreaterThanEqualSpecification("id", 1)
     assert Specification.parse(id=1, name="a") == AndSpecification(
         [EqualsSpecification("id", 1), EqualsSpecification("name", "a")]
     )
@@ -37,7 +37,7 @@ def test_parse():
         [EqualsSpecification("id", 1), EqualsSpecification("name", "a")]
     )
     assert Specification.parse(id__gt=1, name__contains="a") == AndSpecification(
-        [GreaterThenSpecification("id", 1), ContainsSpecification("name", "a")]
+        [GreaterThanSpecification("id", 1), ContainsSpecification("name", "a")]
     )
 
 

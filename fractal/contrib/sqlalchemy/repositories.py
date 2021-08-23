@@ -118,8 +118,10 @@ class SqlAlchemyRepositoryMixin(
         return entity
 
     def update(self, entity: Entity, upsert=False) -> Entity:
-        self.remove_one(IdSpecification(entity.id))
-        return self.add(entity)
+        with self:
+            if self.find_one(IdSpecification(entity.id)) or upsert:
+                self.remove_one(IdSpecification(entity.id))
+                return self.add(entity)
 
     def remove_one(self, specification: Specification):
         if entity := self._find_one_raw(specification):
@@ -129,7 +131,10 @@ class SqlAlchemyRepositoryMixin(
     def find_one(self, specification: Specification) -> Optional[Entity]:
         entity = self._find_one_raw(specification)
         if entity:
-            return self.entity(**entity.__dict__)
+            d = entity.__dict__
+            if "_sa_instance_state" in d:
+                del d["_sa_instance_state"]
+            return self.entity(**d)
 
     def find(
         self, specification: Optional[Specification] = None
@@ -151,7 +156,9 @@ class SqlAlchemyRepositoryMixin(
             return entity
 
     def _find_raw(self, specification: Optional[Specification]) -> List[Entity]:
-        _filter = SqlAlchemyOrmSpecificationBuilder.build(specification)
+        _filter = {}
+        if specification:
+            _filter = SqlAlchemyOrmSpecificationBuilder.build(specification)
         if isinstance(_filter, list):
             entities = []
             for f in _filter:
