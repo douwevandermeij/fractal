@@ -1,20 +1,27 @@
 from __future__ import annotations
 
+import dataclasses
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, Generic, List, Optional, TypeVar
+from typing import Dict, Generator, Generic, List, Optional, TypeVar, get_type_hints
 
 from sqlalchemy import MetaData, Table, create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import ArgumentError, IntegrityError
 from sqlalchemy.orm import Mapper, Session, sessionmaker
 
 from fractal.contrib.sqlalchemy.specifications import SqlAlchemyOrmSpecificationBuilder
+from fractal.core.exceptions import DomainException
 from fractal.core.repositories import Entity, Repository
 from fractal.core.specifications.generic.specification import Specification
 from fractal.core.specifications.id_specification import IdSpecification
 
 EntityDao = TypeVar("EntityDao")
+
+
+class UnknownListItemTypeException(DomainException):
+    code = "UNKNOWN_LIST_ITEM_TYPE_EXCEPTION"
+    status_code = 500
 
 
 class SqlAlchemyDao(ABC):
@@ -26,6 +33,10 @@ class SqlAlchemyDao(ABC):
     @staticmethod
     @abstractmethod
     def table(meta: MetaData) -> Table:
+        raise NotImplementedError
+
+    @staticmethod
+    def from_domain(obj: Entity) -> SqlAlchemyDao:
         raise NotImplementedError
 
 
@@ -108,7 +119,10 @@ class SqlAlchemyRepositoryMixin(
         )
 
     def add(self, entity: Entity) -> Entity:
-        entity_dao = self.entity_dao.from_domain(entity)
+        return self.__add(entity, self.entity_dao)
+
+    def __add(self, entity: Entity, entity_dao_class: SqlAlchemyDao) -> Entity:
+        entity_dao = entity_dao_class.from_domain(entity)
         with self:
             try:
                 self.session.add(entity_dao)
@@ -117,24 +131,72 @@ class SqlAlchemyRepositoryMixin(
                 raise
         return entity
 
-    def update(self, entity: Entity, upsert=False) -> Entity:
+    def update(self, entity: Entity, *, upsert=False) -> Entity:
+        return self.__update(entity, self.entity_dao, upsert=upsert)
+
+    def __update(
+        self, entity: Entity, entity_dao_class: SqlAlchemyDao, *, upsert=False
+    ) -> Entity:
+        """Recursive function"""
         with self:
-            if self.find_one(IdSpecification(entity.id)) or upsert:
-                self.remove_one(IdSpecification(entity.id))
-                return self.add(entity)
+            try:
+                existing_entity_dao = self._find_one_raw(
+                    IdSpecification(entity.id), entity_dao_class=entity_dao_class
+                )
+            except ArgumentError:
+                raise UnknownListItemTypeException(
+                    f"DAO '{entity_dao_class}' has an unknown list collection DAO, please add the type for the list."
+                )
+            if existing_entity_dao:
+                updating_entity_dao = entity_dao_class.from_domain(entity)
+
+                regular_fields = []
+                list_fields = []
+                for k, v in entity_dao_class.__annotations__.items():
+                    if hasattr(v, "__origin__") and v.__origin__ is list:
+                        list_fields.append(k)
+                    else:
+                        regular_fields.append(k)
+
+                # process main entity
+                for k, v in updating_entity_dao.__dict__.items():
+                    if hasattr(existing_entity_dao, k) and k in regular_fields:
+                        setattr(existing_entity_dao, k, v)
+
+                for field in list_fields:
+                    item_dao_class = get_type_hints(entity_dao_class)[field].__args__[0]
+
+                    # check for new items
+                    for item in getattr(entity, field):
+                        self.__update(item, item_dao_class, upsert=True)
+
+                    # check for items to delete
+                    foreign_key = getattr(entity_dao_class, field).expression.right
+                    items = list(
+                        self.session.query(item_dao_class).filter(
+                            foreign_key == entity.id
+                        )
+                    )
+                    item_ids = [item.id for item in getattr(entity, field)]
+                    for item_dao in items:
+                        if item_dao.id not in item_ids:
+                            self.session.delete(item_dao)
+
+                self.commit()
+                return entity
+            elif upsert:
+                return self.__add(entity, entity_dao_class)
 
     def remove_one(self, specification: Specification):
-        if entity := self._find_one_raw(specification):
+        entity = self._find_one_raw(specification)
+        if entity:
             self.session.delete(entity)
             self.commit()
 
     def find_one(self, specification: Specification) -> Optional[Entity]:
         entity = self._find_one_raw(specification)
         if entity:
-            d = entity.__dict__
-            if "_sa_instance_state" in d:
-                del d["_sa_instance_state"]
-            return self.entity(**d)
+            return self._dao_to_domain(entity)
 
     def find(
         self, specification: Optional[Specification] = None
@@ -144,18 +206,48 @@ class SqlAlchemyRepositoryMixin(
         if specification:
             entities = filter(lambda i: specification.is_satisfied_by(i), entities)
         for entity in entities:
-            d = entity.__dict__
-            if "_sa_instance_state" in d:
-                del d["_sa_instance_state"]
-            yield self.entity(**d)
+            yield self._dao_to_domain(entity)
 
-    def _find_one_raw(self, specification: Specification) -> Optional[Entity]:
-        entities = self._find_raw(specification)
+    def _dao_to_domain(self, entity: Entity):
+        return self.__dao_to_domain(entity, self.entity, self.entity_dao)
+
+    def __dao_to_domain(
+        self, entity: Entity, domain_model: Entity, entity_dao: SqlAlchemyDao
+    ):
+        """Recursive function"""
+        list_fields = []
+        for k, v in entity_dao.__annotations__.items():
+            if hasattr(v, "__origin__") and v.__origin__ is list:
+                list_fields.append(k)
+        d = entity.__dict__
+        for field in list_fields:
+            if hasattr(entity, field):
+                item_domain_model = get_type_hints(domain_model)[field].__args__[0]
+                item_entity_dao = get_type_hints(entity_dao)[field].__args__[0]
+                d[field] = [
+                    self.__dao_to_domain(sub_entity, item_domain_model, item_entity_dao)
+                    for sub_entity in getattr(entity, field)
+                ]
+        fields = set(f.name for f in dataclasses.fields(domain_model))
+        return domain_model(**{k: v for k, v in d.items() if k in fields})
+
+    def _find_one_raw(
+        self,
+        specification: Specification,
+        *,
+        entity_dao_class: Optional[SqlAlchemyDao] = None,
+    ) -> Optional[Entity]:
+        entities = self._find_raw(specification, entity_dao_class=entity_dao_class)
 
         for entity in filter(lambda i: specification.is_satisfied_by(i), entities):
             return entity
 
-    def _find_raw(self, specification: Optional[Specification]) -> List[Entity]:
+    def _find_raw(
+        self,
+        specification: Optional[Specification],
+        *,
+        entity_dao_class: Optional[SqlAlchemyDao] = None,
+    ) -> List[Entity]:
         _filter = {}
         if specification:
             _filter = SqlAlchemyOrmSpecificationBuilder.build(specification)
@@ -163,11 +255,17 @@ class SqlAlchemyRepositoryMixin(
             entities = []
             for f in _filter:
                 entities.extend(
-                    list(self.session.query(self.entity_dao).filter_by(**dict(f)))
+                    list(
+                        self.session.query(
+                            entity_dao_class or self.entity_dao
+                        ).filter_by(**dict(f))
+                    )
                 )
+            return entities
         else:
-            entities = self.session.query(self.entity_dao).filter_by(**dict(_filter))
-        return entities
+            return self.session.query(entity_dao_class or self.entity_dao).filter_by(
+                **dict(_filter)
+            )
 
     def is_healthy(self) -> bool:
         try:
