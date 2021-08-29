@@ -1,6 +1,6 @@
 import re
 from functools import reduce
-from typing import Collection, Optional
+from typing import Collection, Optional, Union
 
 from django.db.models import Q
 
@@ -11,11 +11,11 @@ from fractal.core.specifications.generic.collections import (
 )
 from fractal.core.specifications.generic.operators import (
     EqualsSpecification,
-    GreaterThenEqualSpecification,
-    GreaterThenSpecification,
+    GreaterThanEqualSpecification,
+    GreaterThanSpecification,
     InSpecification,
-    LessThenEqualSpecification,
-    LessThenSpecification,
+    LessThanEqualSpecification,
+    LessThanSpecification,
     RegexStringMatchSpecification,
 )
 from fractal.core.specifications.generic.specification import Specification
@@ -35,16 +35,19 @@ class DjangoOrmSpecificationBuilder:
             return Q(**filter)
 
     @staticmethod
-    def build(specification: Specification = None) -> Optional[Collection]:
+    def build(specification: Specification = None) -> Optional[Union[Collection, Q]]:
         if specification is None:
             return None
         elif isinstance(specification, AndSpecification):
-            return [
-                DjangoOrmSpecificationBuilder.create_q(
-                    DjangoOrmSpecificationBuilder.build(spec)
-                )
-                for spec in specification.to_collection()
-            ]
+            return reduce(
+                lambda x, y: x & y,
+                [
+                    DjangoOrmSpecificationBuilder.create_q(
+                        DjangoOrmSpecificationBuilder.build(spec)
+                    )
+                    for spec in specification.to_collection()
+                ],
+            )
         elif isinstance(specification, OrSpecification):
             return reduce(
                 lambda x, y: x | y,
@@ -59,21 +62,20 @@ class DjangoOrmSpecificationBuilder:
             return {f"{specification.field}__in": specification.value}
         elif isinstance(specification, EqualsSpecification):
             return {specification.field: specification.value}
-        elif isinstance(specification, LessThenSpecification):
+        elif isinstance(specification, LessThanSpecification):
             return {f"{specification.field}__lt": specification.value}
-        elif isinstance(specification, LessThenEqualSpecification):
+        elif isinstance(specification, LessThanEqualSpecification):
             return {f"{specification.field}__lte": specification.value}
-        elif isinstance(specification, GreaterThenSpecification):
+        elif isinstance(specification, GreaterThanSpecification):
             return {f"{specification.field}__gt": specification.value}
-        elif isinstance(specification, GreaterThenEqualSpecification):
+        elif isinstance(specification, GreaterThanEqualSpecification):
             return {f"{specification.field}__gte": specification.value}
         elif isinstance(specification, RegexStringMatchSpecification):
             return {
                 f"{specification.field}__regex": rf".*{re.escape(specification.value)}.*"
             }
         elif isinstance(specification.to_collection(), dict):
-            for key, value in dict(specification.to_collection()).items():
-                return {key: value}
+            return specification.to_collection()
         raise SpecificationNotMappedToDjangoOrm(
             f"Specification '{specification}' not mapped to Django Orm query."
         )

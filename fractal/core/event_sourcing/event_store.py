@@ -59,6 +59,7 @@ class ObjectEventStore(BasicEventStore):
                     event=event.__class__.__name__,
                     data=event,
                     object_id=event.object_id,
+                    aggregate_root_id=event.aggregate_root_id,
                 )
             )
 
@@ -90,6 +91,7 @@ class DictEventStore(BasicEventStore):
                     event=event.__class__.__name__,
                     data=asdict(event),
                     object_id=event.object_id,
+                    aggregate_root_id=event.aggregate_root_id,
                 )
             )
 
@@ -127,6 +129,7 @@ class JsonEventStore(BasicEventStore):
                     event=event.__class__.__name__,
                     data=json.dumps(asdict(event), cls=self.json_encoder),
                     object_id=event.object_id,
+                    aggregate_root_id=event.aggregate_root_id,
                 )
             )
 
@@ -164,6 +167,7 @@ class PickleEventStore(BasicEventStore):
                     event=event.__class__.__name__,
                     data=pickle.dumps(event),
                     object_id=event.object_id,
+                    aggregate_root_id=event.aggregate_root_id,
                 )
             )
 

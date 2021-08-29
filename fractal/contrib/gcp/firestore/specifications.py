@@ -4,11 +4,11 @@ from fractal.core.exceptions import DomainException
 from fractal.core.specifications.generic.collections import AndSpecification
 from fractal.core.specifications.generic.operators import (
     EqualsSpecification,
-    GreaterThenEqualSpecification,
-    GreaterThenSpecification,
+    GreaterThanEqualSpecification,
+    GreaterThanSpecification,
     InSpecification,
-    LessThenEqualSpecification,
-    LessThenSpecification,
+    LessThanEqualSpecification,
+    LessThanSpecification,
 )
 from fractal.core.specifications.generic.specification import Specification
 
@@ -32,17 +32,19 @@ class FirestoreSpecificationBuilder:
             return specification.field, "in", specification.value
         elif isinstance(specification, EqualsSpecification):
             return specification.field, "==", specification.value
-        elif isinstance(specification, LessThenSpecification):
+        elif isinstance(specification, LessThanSpecification):
             return specification.field, "<", specification.value
-        elif isinstance(specification, LessThenEqualSpecification):
+        elif isinstance(specification, LessThanEqualSpecification):
             return specification.field, "<=", specification.value
-        elif isinstance(specification, GreaterThenSpecification):
+        elif isinstance(specification, GreaterThanSpecification):
             return specification.field, ">", specification.value
-        elif isinstance(specification, GreaterThenEqualSpecification):
+        elif isinstance(specification, GreaterThanEqualSpecification):
             return specification.field, ">=", specification.value
         elif isinstance(specification.to_collection(), dict):
-            for key, value in dict(specification.to_collection()).items():
-                return key, "==", value
+            return [
+                (key, "==", value)
+                for key, value in dict(specification.to_collection()).items()
+            ]
         raise SpecificationNotMappedToFirestore(
             f"Specification '{specification}' not mapped to Firestore query."
         )

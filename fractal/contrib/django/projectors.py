@@ -18,5 +18,6 @@ class DjangoSignalEventProjector(EventProjector):
             event=event.__class__.__name__,
             data=event,
             object_id=str(event.object_id),
+            aggregate_root_id=str(event.aggregate_root_id),
         )
         fractal_event_signal.send(sender=self.__class__, message=message)

@@ -17,5 +17,6 @@ class PrintEventProjector(EventProjector):
             event=event.__class__.__name__,
             data=event,
             object_id=str(event.object_id),
+            aggregate_root_id=str(event.aggregate_root_id),
         )
         print(json.dumps(asdict(message), cls=EnhancedEncoder))

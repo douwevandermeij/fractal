@@ -10,3 +10,4 @@ class Message:
     event: str
     data: Any
     object_id: str
+    aggregate_root_id: str

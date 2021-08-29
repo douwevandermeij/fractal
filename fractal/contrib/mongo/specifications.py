@@ -8,11 +8,11 @@ from fractal.core.specifications.generic.collections import (
 )
 from fractal.core.specifications.generic.operators import (
     EqualsSpecification,
-    GreaterThenEqualSpecification,
-    GreaterThenSpecification,
+    GreaterThanEqualSpecification,
+    GreaterThanSpecification,
     InSpecification,
-    LessThenEqualSpecification,
-    LessThenSpecification,
+    LessThanEqualSpecification,
+    LessThanSpecification,
     RegexStringMatchSpecification,
 )
 from fractal.core.specifications.generic.specification import Specification
@@ -46,21 +46,25 @@ class MongoSpecificationBuilder:
             return {specification.field: {"$in": specification.value}}
         elif isinstance(specification, EqualsSpecification):
             return {specification.field: {"$eq": specification.value}}
-        elif isinstance(specification, LessThenSpecification):
+        elif isinstance(specification, LessThanSpecification):
             return {specification.field: {"$lt": specification.value}}
-        elif isinstance(specification, LessThenEqualSpecification):
+        elif isinstance(specification, LessThanEqualSpecification):
             return {specification.field: {"$lte": specification.value}}
-        elif isinstance(specification, GreaterThenSpecification):
+        elif isinstance(specification, GreaterThanSpecification):
             return {specification.field: {"$gt": specification.value}}
-        elif isinstance(specification, GreaterThenEqualSpecification):
+        elif isinstance(specification, GreaterThanEqualSpecification):
             return {specification.field: {"$gte": specification.value}}
         elif isinstance(specification, RegexStringMatchSpecification):
             return {
                 specification.field: {"$regex": f".*{re.escape(specification.value)}.*"}
             }
         elif isinstance(specification.to_collection(), dict):
-            for key, value in dict(specification.to_collection()).items():
-                return {key: {"$eq": value}}
+            return {
+                "$and": [
+                    {key: {"$eq": value}}
+                    for key, value in dict(specification.to_collection()).items()
+                ]
+            }
         raise SpecificationNotMappedToMongo(
             f"Specification '{specification}' not mapped to Mongo query."
         )
