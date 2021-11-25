@@ -4,10 +4,10 @@ To test Kafka, you can use the enclosed `docker-compose.yml` and use the followi
 
     self.EVENT_BUS_BACKEND = os.getenv("EVENT_BUS_BACKEND", "kafka")
 
-    self.KAFKA_HOST = os.getenv("RABBITMQ_HOST", "localhost")
-    self.KAFKA_PORT = os.getenv("RABBITMQ_PORT", "9093")
-    self.KAFKA_USERNAME = os.getenv("RABBITMQ_USERNAME", "")
-    self.KAFKA_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "")
+    self.KAFKA_HOST = os.getenv("KAFKA_HOST", "localhost")
+    self.KAFKA_PORT = os.getenv("KAFKA_PORT", "9093")
+    self.KAFKA_USERNAME = os.getenv("KAFKA_USERNAME", "")
+    self.KAFKA_PASSWORD = os.getenv("KAFKA_PASSWORD", "")
 
 And in your context:
 

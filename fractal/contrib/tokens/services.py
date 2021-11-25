@@ -66,7 +66,29 @@ class DummyJsonTokenService(TokenService):
         return json.dumps(payload)
 
     def verify(self, token: str):
-        return json.loads(token)
+        try:
+            return json.loads(token)
+        except Exception:
+            raise TokenInvalidException("The supplied token is invalid!")
+
+
+class DummyTokenService(TokenService):
+    def generate(
+        self,
+        payload: Dict,
+        token_type: str = "access",
+        seconds_valid: int = ACCESS_TOKEN_EXPIRATION_SECONDS,
+    ) -> str:
+        return json.dumps(payload)
+
+    def verify(self, token: str):
+        return dict(
+            iss="dummy",
+            sub=str(uuid.uuid4()),
+            account=str(uuid.uuid4()),
+            email="dummy@dummy.dummy",
+            typ="access",
+        )
 
 
 class SymmetricJwtTokenService(TokenService):

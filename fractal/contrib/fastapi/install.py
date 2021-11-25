@@ -23,7 +23,7 @@ def install_fastapi(settings: Settings):
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=getattr(settings, "ALLOW_ORIGINS", ""),
+        allow_origins=getattr(settings, "ALLOW_ORIGINS", "").split(","),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -36,7 +36,7 @@ def install_fastapi(settings: Settings):
         )
 
     @app.exception_handler(DomainException)
-    def unicorn_exception_handler(request: Request, exc: DomainException):
+    def unicorn_domain_exception_handler(request: Request, exc: DomainException):
         logger = logging.getLogger("app")
         if isinstance(exc.status_code, int) and 400 <= exc.status_code < 500:
             logger.warning(f"{exc.code} - {exc.message}")
@@ -50,6 +50,18 @@ def install_fastapi(settings: Settings):
                 message=exc.message,
             ).dict(),
             headers=exc.headers,
+        )
+
+    @app.exception_handler(Exception)
+    def unicorn_exception_handler(request: Request, exc: Exception):
+        logging.error(exc)
+
+        return JSONResponse(
+            status_code=500,
+            content=ErrorMessage(
+                code=exc.__class__.__name__,
+                message=exc,
+            ),
         )
 
     return app

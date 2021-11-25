@@ -6,7 +6,7 @@ def test_default_routes_root(fastapi_client):
 
     response = fastapi_client.get(Routes.ROOT)
     assert response.status_code == 200
-    assert json.loads(response.content) == {"FastAPI": "Example"}
+    assert json.loads(response.content) == {"FastAPI": "Fractal Service"}
 
 
 def test_default_routes_info(fastapi_client):

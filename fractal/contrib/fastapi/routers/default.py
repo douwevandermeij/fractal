@@ -1,16 +1,25 @@
+from typing import Optional
+
 from fastapi import APIRouter
 
 from fractal.contrib.fastapi.routers import Routes
 from fractal.contrib.fastapi.routers.domain.models import AdapterInfo, Info
 from fractal.core.utils.application_context import ApplicationContext
+from fractal.core.utils.settings import Settings
 
 
-def inject_default_routes(context: ApplicationContext):
+def inject_default_routes(
+    context: ApplicationContext, settings: Optional[Settings] = None
+):
     router = APIRouter()
 
     @router.get(Routes.ROOT)
     def read_root():
-        return {"FastAPI": "Example"}
+        return {
+            "FastAPI": settings.APP_NAME
+            if settings and hasattr(settings, "APP_NAME")
+            else "Fractal Service",
+        }
 
     @router.get(Routes.INFO, responses={200: {"model": Info}})
     def info():
