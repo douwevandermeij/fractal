@@ -5,4 +5,4 @@ from fractal.core.process.process_scope import ProcessScope
 
 class Action(ABC):
     def execute(self, scope: ProcessScope) -> ProcessScope:
-        pass
+        """Execute the action"""

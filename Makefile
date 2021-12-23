@@ -2,9 +2,9 @@
 .PHONY: coverage deps help lint publish push sonar test tox
 
 coverage:  ## Run tests with coverage
-	python -m coverage erase
-	python -m coverage run -m pytest -ra
-	python -m coverage report -m
+	rm .coverage ||:
+	rm coverage.xml ||:
+	pytest --cov fractal --cov-report=xml
 
 deps:  ## Install dependencies
 	python -m pip install --upgrade pip
@@ -27,11 +27,10 @@ push:  ## Push code with tags
 
 sonar:  ## Run sonar-scanner
 	make coverage
-	python -m coverage xml
 	sonar-scanner
 
 test:  ## Run tests
-	python -m pytest -ra
+	pytest --cov fractal
 
 tox:   ## Run tox
 	python -m tox

@@ -1,9 +1,12 @@
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from fractal.contrib.fastapi.routers import Routes
 from fractal.contrib.fastapi.routers.domain.models import AdapterInfo, Info
+from fractal.contrib.fastapi.routers.tokens import get_payload
+from fractal.contrib.tokens.fractal import DummyTokenServiceFractal
+from fractal.contrib.tokens.models import TokenPayload
 from fractal.core.utils.application_context import ApplicationContext
 from fractal.core.utils.settings import Settings
 
@@ -22,7 +25,11 @@ def inject_default_routes(
         }
 
     @router.get(Routes.INFO, responses={200: {"model": Info}})
-    def info():
+    def info(
+        payload: TokenPayload = Depends(
+            get_payload(DummyTokenServiceFractal(context, settings))
+        ),
+    ):
         adapters = list(context.adapters())
         data = [
             AdapterInfo(
@@ -38,9 +45,5 @@ def inject_default_routes(
                 context.logger.error(e)
                 data[i].status_ok = False
         return data
-
-    @router.get(Routes.HEALTHZ)
-    def healthz():
-        return "ok"
 
     return router

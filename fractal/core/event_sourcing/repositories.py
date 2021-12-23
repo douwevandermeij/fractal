@@ -32,14 +32,7 @@ class EventSourcedRepository(Generic[Entity], Repository[Entity]):
         return entity
 
     def update(self, entity: Entity, upsert=False) -> Entity:
-        if not isinstance(entity, EventSourcedAggregateRoot):
-            raise AggregateRootError
-        self.commit(
-            EventStream(
-                events=entity.release(),
-            )
-        )
-        return entity
+        return self.add(entity)
 
     def remove_one(self, specification: Specification):
         raise NotImplementedError

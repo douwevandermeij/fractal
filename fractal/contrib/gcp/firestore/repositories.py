@@ -31,7 +31,7 @@ class FirestoreRepositoryMixin(Repository[Entity]):
         doc_ref.set(asdict(entity))
         return entity
 
-    def update(self, entity: Entity, upsert=False) -> Entity:
+    def update(self, entity: Entity, *, upsert=False) -> Entity:
         if not upsert:
             doc_ref = self.collection.document(entity.id)
             doc = doc_ref.get()

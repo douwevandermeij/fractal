@@ -1,6 +1,6 @@
 import json
 import uuid
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from calendar import timegm
 from datetime import datetime
 from typing import Dict
@@ -52,7 +52,7 @@ class TokenService(Service):
         return payload
 
     @abstractmethod
-    def verify(self, token: str):
+    def verify(self, token: str, *, typ: str):
         raise NotImplementedError
 
 
@@ -65,11 +65,11 @@ class DummyJsonTokenService(TokenService):
     ) -> str:
         return json.dumps(payload)
 
-    def verify(self, token: str):
+    def verify(self, token: str, *, typ: str):
         try:
             return json.loads(token)
         except Exception:
-            raise TokenInvalidException("The supplied token is invalid!")
+            raise TokenInvalidException()
 
 
 class DummyTokenService(TokenService):
@@ -81,17 +81,53 @@ class DummyTokenService(TokenService):
     ) -> str:
         return json.dumps(payload)
 
-    def verify(self, token: str):
+    def verify(self, token: str, *, typ: str):
         return dict(
             iss="dummy",
             sub=str(uuid.uuid4()),
             account=str(uuid.uuid4()),
             email="dummy@dummy.dummy",
-            typ="access",
+            typ=typ,
         )
 
 
-class SymmetricJwtTokenService(TokenService):
+class StaticTokenService(TokenService):
+    def generate(
+        self,
+        payload: Dict,
+        token_type: str = "access",
+        seconds_valid: int = ACCESS_TOKEN_EXPIRATION_SECONDS,
+    ) -> str:
+        return json.dumps(payload)
+
+    def verify(self, token: str, *, typ: str):
+        return dict(
+            iss="dummy",
+            sub="00000000-0000-0000-0000-000000000000",
+            account="00000000-0000-0000-0000-000000000000",
+            email="dummy@dummy.dummy",
+            typ=typ,
+        )
+
+
+class JwtTokenService(TokenService, ABC):
+    @abstractmethod
+    def decode(self, token: str):
+        raise NotImplementedError
+
+    def verify(self, token: str, *, typ: str):
+        try:
+            payload = self.decode(token)
+        except ExpiredSignatureError:
+            raise TokenExpiredException()
+        except JWTError:
+            raise TokenInvalidException()
+        if payload["typ"] != typ:
+            raise TokenInvalidException()
+        return payload
+
+
+class SymmetricJwtTokenService(JwtTokenService):
     def __init__(self, issuer: str, secret: str):
         self.issuer = issuer
         self.secret = secret
@@ -119,19 +155,11 @@ class SymmetricJwtTokenService(TokenService):
             algorithm=self.algorithm,
         )
 
-    def verify(self, token: str):
-        try:
-            payload = jwt.decode(token, self.secret, algorithms=self.algorithm)
-        except ExpiredSignatureError:
-            raise TokenExpiredException("The supplied token is expired!")
-        except JWTError:
-            raise TokenInvalidException("The supplied token is invalid!")
-        if payload["typ"] != "access":
-            raise TokenInvalidException("The supplied token is invalid!")
-        return payload
+    def decode(self, token: str):
+        return jwt.decode(token, self.secret, algorithms=self.algorithm)
 
 
-class AsymmetricJwtTokenService(TokenService):
+class AsymmetricJwtTokenService(JwtTokenService):
     def __init__(self, issuer: str, private_key: str, public_key: str):
         self.issuer = issuer
         self.private_key = private_key
@@ -161,13 +189,5 @@ class AsymmetricJwtTokenService(TokenService):
             algorithm=self.algorithm,
         )
 
-    def verify(self, token: str):
-        try:
-            payload = jwt.decode(token, self.public_key, algorithms=self.algorithm)
-        except ExpiredSignatureError:
-            raise TokenExpiredException("The supplied token is expired!")
-        except JWTError:
-            raise TokenInvalidException("The supplied token is invalid!")
-        if payload["typ"] not in ["access", "refresh"]:
-            raise TokenInvalidException("The supplied token is invalid!")
-        return payload
+    def decode(self, token: str):
+        return jwt.decode(token, self.public_key, algorithms=self.algorithm)

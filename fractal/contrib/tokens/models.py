@@ -10,3 +10,7 @@ class TokenPayload(BaseModel):
     account: Optional[UUID]
     email: Optional[str]
     typ: Optional[str]
+
+
+class TokenPayloadRoles(TokenPayload):
+    roles: Optional[list]

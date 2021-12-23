@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generator, Generic, Optional, TypeVar
+from typing import Generic, Iterator, Optional, TypeVar
 
 from fractal.core.specifications.generic.specification import Specification
 
@@ -24,9 +24,7 @@ class Repository(Generic[Entity], ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def find(
-        self, specification: Specification = None
-    ) -> Generator[Entity, None, None]:
+    def find(self, specification: Specification = None) -> Iterator[Entity]:
         raise NotImplementedError
 
     @abstractmethod

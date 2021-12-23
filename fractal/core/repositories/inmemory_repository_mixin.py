@@ -1,4 +1,4 @@
-from typing import Dict, Generator, Optional
+from typing import Dict, Iterator, Optional
 
 from fractal.core.repositories import Entity, Repository
 from fractal.core.specifications.generic.specification import Specification
@@ -26,9 +26,7 @@ class InMemoryRepositoryMixin(Repository[Entity]):
         ):
             return entity
 
-    def find(
-        self, specification: Optional[Specification] = None
-    ) -> Generator[Entity, None, None]:
+    def find(self, specification: Optional[Specification] = None) -> Iterator[Entity]:
         if specification:
             entities = filter(
                 lambda i: specification.is_satisfied_by(i), self.entities.values()

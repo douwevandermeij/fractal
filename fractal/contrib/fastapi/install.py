@@ -60,8 +60,8 @@ def install_fastapi(settings: Settings):
             status_code=500,
             content=ErrorMessage(
                 code=exc.__class__.__name__,
-                message=exc,
-            ),
+                message=str(exc),
+            ).dict(),
         )
 
     return app

@@ -24,6 +24,11 @@ class UnknownListItemTypeException(DomainException):
     status_code = 500
 
 
+class IntegrityErrorException(DomainException):
+    code = "INTEGRITY_ERROR_EXCEPTION"
+    status_code = 500
+
+
 class SqlAlchemyDao(ABC):
     @staticmethod
     @abstractmethod
@@ -127,8 +132,8 @@ class SqlAlchemyRepositoryMixin(
             try:
                 self.session.add(entity_dao)
                 self.commit()
-            except IntegrityError:
-                raise
+            except IntegrityError as e:
+                raise IntegrityErrorException(e)
         return entity
 
     def update(self, entity: Entity, *, upsert=False) -> Entity:
@@ -148,44 +153,54 @@ class SqlAlchemyRepositoryMixin(
                     f"DAO '{entity_dao_class}' has an unknown list collection DAO, please add the type for the list."
                 )
             if existing_entity_dao:
-                updating_entity_dao = entity_dao_class.from_domain(entity)
-
-                regular_fields = []
-                list_fields = []
-                for k, v in entity_dao_class.__annotations__.items():
-                    if hasattr(v, "__origin__") and v.__origin__ is list:
-                        list_fields.append(k)
-                    else:
-                        regular_fields.append(k)
-
-                # process main entity
-                for k, v in updating_entity_dao.__dict__.items():
-                    if hasattr(existing_entity_dao, k) and k in regular_fields:
-                        setattr(existing_entity_dao, k, v)
-
-                for field in list_fields:
-                    item_dao_class = get_type_hints(entity_dao_class)[field].__args__[0]
-
-                    # check for new items
-                    for item in getattr(entity, field):
-                        self.__update(item, item_dao_class, upsert=True)
-
-                    # check for items to delete
-                    foreign_key = getattr(entity_dao_class, field).expression.right
-                    items = list(
-                        self.session.query(item_dao_class).filter(
-                            foreign_key == entity.id
-                        )
-                    )
-                    item_ids = [item.id for item in getattr(entity, field)]
-                    for item_dao in items:
-                        if item_dao.id not in item_ids:
-                            self.session.delete(item_dao)
-
-                self.commit()
+                self.__update_existing_record(
+                    entity, entity_dao_class, existing_entity_dao
+                )
                 return entity
             elif upsert:
                 return self.__add(entity, entity_dao_class)
+
+    def __update_existing_record(self, entity, entity_dao_class, existing_entity_dao):
+        updating_entity_dao = entity_dao_class.from_domain(entity)
+        regular_fields = []
+        list_fields = []
+
+        for k, v in entity_dao_class.__annotations__.items():
+            if hasattr(v, "__origin__") and v.__origin__ is list:
+                list_fields.append(k)
+            else:
+                regular_fields.append(k)
+
+        self.__update_main_entity(
+            existing_entity_dao, regular_fields, updating_entity_dao
+        )
+        self.__update_compound_entities(entity, entity_dao_class, list_fields)
+        self.commit()
+
+    def __update_main_entity(
+        self, existing_entity_dao, regular_fields, updating_entity_dao
+    ):
+        for k, v in updating_entity_dao.__dict__.items():
+            if hasattr(existing_entity_dao, k) and k in regular_fields:
+                setattr(existing_entity_dao, k, v)
+
+    def __update_compound_entities(self, entity, entity_dao_class, list_fields):
+        for field in list_fields:
+            item_dao_class = get_type_hints(entity_dao_class)[field].__args__[0]
+
+            # check for new items
+            for item in getattr(entity, field):
+                self.__update(item, item_dao_class, upsert=True)
+
+            # check for items to delete
+            foreign_key = getattr(entity_dao_class, field).expression.right
+            items = list(
+                self.session.query(item_dao_class).filter(foreign_key == entity.id)
+            )
+            item_ids = [item.id for item in getattr(entity, field)]
+            for item_dao in items:
+                if item_dao.id not in item_ids:
+                    self.session.delete(item_dao)
 
     def remove_one(self, specification: Specification):
         entity = self._find_one_raw(specification)

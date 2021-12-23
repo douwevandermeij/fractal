@@ -1,5 +1,52 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Collection
+from typing import Any, Collection, Iterator
+
+
+def parse_item(field_op: str, value: Any) -> Specification:
+    if "__" not in field_op:
+        from fractal.core.specifications.generic.operators import EqualsSpecification
+
+        return EqualsSpecification(field_op, value)
+    else:
+        field, op = field_op.split("__")
+        specification = None
+        if op == "equals":
+            from fractal.core.specifications.generic.operators import (
+                EqualsSpecification as specification,
+            )
+        elif op == "in":
+            from fractal.core.specifications.generic.operators import (
+                InSpecification as specification,
+            )
+        elif op == "contains":
+            from fractal.core.specifications.generic.operators import (
+                ContainsSpecification as specification,
+            )
+        elif op == "lt":
+            from fractal.core.specifications.generic.operators import (
+                LessThanSpecification as specification,
+            )
+        elif op == "lte":
+            from fractal.core.specifications.generic.operators import (
+                LessThanEqualSpecification as specification,
+            )
+        elif op == "gt":
+            from fractal.core.specifications.generic.operators import (
+                GreaterThanSpecification as specification,
+            )
+        elif op == "gte":
+            from fractal.core.specifications.generic.operators import (
+                GreaterThanEqualSpecification as specification,
+            )
+        if specification:
+            return specification(field, value)
+
+
+def parse(**kwargs) -> Iterator[Specification]:
+    for field_op, value in kwargs.items():
+        yield parse_item(field_op, value)
 
 
 class Specification(ABC):
@@ -32,49 +79,7 @@ class Specification(ABC):
 
     @staticmethod
     def parse(**kwargs):
-        def __parse(**kwargs):
-            for k, v in kwargs.items():
-                if "__" not in k:
-                    from fractal.core.specifications.generic.operators import (
-                        EqualsSpecification,
-                    )
-
-                    yield EqualsSpecification(k, v)
-                else:
-                    field, op = k.split("__")
-                    Spec = None
-                    if op == "equals":
-                        from fractal.core.specifications.generic.operators import (
-                            EqualsSpecification as Spec,
-                        )
-                    elif op == "in":
-                        from fractal.core.specifications.generic.operators import (
-                            InSpecification as Spec,
-                        )
-                    elif op == "contains":
-                        from fractal.core.specifications.generic.operators import (
-                            ContainsSpecification as Spec,
-                        )
-                    elif op == "lt":
-                        from fractal.core.specifications.generic.operators import (
-                            LessThanSpecification as Spec,
-                        )
-                    elif op == "lte":
-                        from fractal.core.specifications.generic.operators import (
-                            LessThanEqualSpecification as Spec,
-                        )
-                    elif op == "gt":
-                        from fractal.core.specifications.generic.operators import (
-                            GreaterThanSpecification as Spec,
-                        )
-                    elif op == "gte":
-                        from fractal.core.specifications.generic.operators import (
-                            GreaterThanEqualSpecification as Spec,
-                        )
-                    if Spec:
-                        yield Spec(field, v)
-
-        specs = list(__parse(**kwargs))
+        specs = list(parse(**kwargs))
         if len(specs) > 1:
             from fractal.core.specifications.generic.collections import AndSpecification
 

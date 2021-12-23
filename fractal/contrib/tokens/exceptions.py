@@ -5,10 +5,20 @@ class TokenInvalidException(DomainException):
     code = "TOKEN_INVALID"
     status_code = 403
 
+    def __init__(self, message=None):
+        if not message:
+            message = "The supplied token is invalid!"
+        super(TokenInvalidException, self).__init__(message)
+
 
 class TokenExpiredException(DomainException):
     code = "TOKEN_EXPIRED"
     status_code = 403
+
+    def __init__(self, message=None):
+        if not message:
+            message = "The supplied token is expired!"
+        super(TokenExpiredException, self).__init__(message)
 
 
 class NotAllowedException(DomainException):
