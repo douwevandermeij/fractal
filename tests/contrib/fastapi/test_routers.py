@@ -17,6 +17,7 @@ def test_default_routes_info(fastapi_client, token):
     assert json.loads(response.content) == [
         {"adapter": "InMemoryRepository", "status_ok": True},
         {"adapter": "FakeService", "status_ok": True},
+        {"adapter": "DummyJsonTokenService", "status_ok": True},
     ]
 
 
@@ -35,6 +36,7 @@ def test_default_routes_info_error(failing_service_fastapi_client, token):
     assert json.loads(response.content) == [
         {"adapter": "InMemoryRepository", "status_ok": True},
         {"adapter": "FakeService", "status_ok": True},
+        {"adapter": "DummyJsonTokenService", "status_ok": True},
         {"adapter": "FailingService", "status_ok": False},
     ]
 

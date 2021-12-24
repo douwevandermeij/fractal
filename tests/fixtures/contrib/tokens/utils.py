@@ -24,10 +24,28 @@ def user(account):
 
 
 @pytest.fixture
-def token(token_service_fractal, user, account):
-    return token_service_fractal.context.token_service.generate(
+def token(dummy_token_service_fractal, user, account):
+    return dummy_token_service_fractal.context.token_service.generate(
         {
             "sub": user.id,
             "account": account.id,
         }
     )
+
+
+@pytest.fixture
+def admin_role_token(dummy_token_service_fractal, user, account):
+    return dummy_token_service_fractal.context.token_service.generate(
+        {
+            "sub": user.id,
+            "account": account.id,
+            "roles": ["admin"],
+        }
+    )
+
+
+@pytest.fixture
+def token_service_application_context(fake_application_context_class, dummy_json_token_service_class):
+    application_context = fake_application_context_class()
+    application_context.install_service(dummy_json_token_service_class, name="token_service")
+    return application_context
