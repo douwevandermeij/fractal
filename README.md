@@ -146,11 +146,8 @@ class ApplicationContext(BaseContext):
 
 ```python
 from abc import ABC
-from dataclasses import dataclass  # NOQA
+from dataclasses import dataclass
 
-from pydantic.dataclasses import dataclass
-
-from fractal.core.exceptions import DomainException
 from fractal.core.models import Model
 from fractal.core.repositories import Repository
 
@@ -161,43 +158,54 @@ class User(Model):
     name: str
 
 
-class UserNotFoundException(DomainException):
-    code = "USER_NOT_FOUND"
-    status_code = 404
-
-    def __init__(self, message=None):
-        if not message:
-            message = "User not found!"
-        super(UserNotFoundException, self).__init__(message)
-
-
 class UserRepository(Repository[User], ABC):
-    entity = User
+    pass
 ```
 
 ##### adapters/users.py
 
 ```python
-from app.service.domain.users import (
-    User,
-    UserNotFoundException,
-    UserRepository,
-)
+from app.service.domain.users import User, UserRepository
 from fractal.core.repositories.inmemory_repository_mixin import InMemoryRepositoryMixin
-from fractal.core.specifications.generic.specification import Specification
 
 
 class InMemoryUserRepository(UserRepository, InMemoryRepositoryMixin[User]):
-    def find_one(self, specification: Specification) -> User:
-        obj = super(InMemoryUserRepository, self).find_one(specification)
-        if not obj:
-            raise UserNotFoundException
-        return obj
+    pass
 ```
 
 ### Advanced features
 
-#### Command pattern
+#### Command bus pattern
+
+A command is a container to invoke actions in the domain, from inside and outside of the domain.
+A command has a one-to-one relation with a handler, a so called command handler.
+The command handler can be seen as a single transaction, e.g., to a database.
+
+The code in the command handler should just be doing the thing that is necessary to be inside the transaction.
+A transaction can go wrong and can be rolled back, so it's important to prevent side effects from happening and include
+only the code that needs to go in the same transaction and thus will be rolled back as a whole when going wrong.
+Secondary actions that need to take place _after_ the action has been done, should be outside of scope of the command
+handler.
+
+After a command handler has been completed successfully, that is, when the transaction is persisted, an event will be
+published. This event is the trigger for all secondary actions, which in turn can be commands again.
+
+TODO
+
+#### Event bus
+
+Next to the command bus, Fractal provides an event bus. Events are published onto the event bus by the command handlers.
+Event projectors may be used to subscribe to certain events to be able to perform a new action, a side effect.
+A projector can be used to publish events externally as well, for example, onto event streaming platforms.
+Other applications (or Fractal services) can subscribe to these events again and project them internally.
+
+TODO
+
+#### Eventual consistency
+
+TODO
+
+#### Event sourcing
 
 TODO
 
@@ -209,10 +217,11 @@ TODO
 
 TODO
 
+Request contract, together with URI parameters and authentication token payload can be processed by the application
+by using the command bus. The command can ingest the separate variables and/or domain objects (entities).
+
+Response contract might be different from the domain object that is affected by the request.
+
 #### Authentication
-
-TODO
-
-#### Event sourcing
 
 TODO

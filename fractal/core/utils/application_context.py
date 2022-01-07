@@ -22,6 +22,7 @@ class ApplicationContext(object):
         init_logging(os.getenv("LOG_LEVEL", "INFO"))
         self.logger = logging.getLogger("app")
         self.repositories = []
+        self.repository_names = []
         self.service_names = []
 
         self.load_internal_services()
@@ -68,7 +69,12 @@ class ApplicationContext(object):
     def load_ingress_services(self):
         """Load services to external interfaces that are initiated by the external services (inbound)"""
 
-    def install_repository(self, repository):
+    def install_repository(self, repository, *, name=""):
+        if not name:
+            from fractal.core.utils.string import camel_to_snake
+
+            name = camel_to_snake(repository.__class__.__name__)
+        self.repository_names.append(name)
         self.repositories.append(repository)
         return repository
 

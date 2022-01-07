@@ -1,12 +1,12 @@
 import json
 
 
-def test_default_routes_root(fastapi_client):
+def test_default_routes_root(fastapi_client, settings):
     from fractal.contrib.fastapi.routers import Routes
 
     response = fastapi_client.get(Routes.ROOT)
     assert response.status_code == 200
-    assert json.loads(response.content) == {"FastAPI": "Fractal Service"}
+    assert json.loads(response.content) == {"FastAPI": settings.APP_NAME}
 
 
 def test_default_routes_info(fastapi_client, token):

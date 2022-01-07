@@ -19,6 +19,10 @@ class Model:
         current.update(model)
         return self.from_dict(current)
 
+    def asdict(self):
+        field_names = set(f.name for f in fields(self))
+        return {k: v for k, v in self.__dict__.items() if k in field_names}
+
 
 @dataclass
 class Contract(Model):

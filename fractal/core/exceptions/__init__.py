@@ -20,3 +20,13 @@ class AggregateRootError(DomainException):
         if not message:
             message = "Actions can only be taken on aggregate root objects."
         super(AggregateRootError, self).__init__(message)
+
+
+class ObjectNotFoundException(DomainException):
+    code = "OBJECT_NOT_FOUND"
+    status_code = 404
+
+    def __init__(self, message=None):
+        if not message:
+            message = "Object not found!"
+        super(ObjectNotFoundException, self).__init__(message)

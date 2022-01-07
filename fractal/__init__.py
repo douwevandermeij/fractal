@@ -1,8 +1,11 @@
 """Fractal is a scaffolding toolkit for building SOLID logic for your Python applications."""
 
-__version__ = "0.2.9"
+__version__ = "0.2.10"
 
 from abc import ABC
+
+from fractal.core.utils.application_context import ApplicationContext
+from fractal.core.utils.settings import Settings
 
 
 class FractalException(Exception):
@@ -10,12 +13,15 @@ class FractalException(Exception):
 
 
 class Fractal(ABC):
+    settings: Settings = None
+    context: ApplicationContext = None
+
     def __init__(self):
-        if not hasattr(self, "settings"):
+        if not self.settings:
             raise FractalException(
-                "Fractal service doesn't have a 'settings' attribute."
+                "Fractal service doesn't provide a 'settings' object."
             )
-        if not hasattr(self, "context"):
+        if not self.context:
             raise FractalException(
-                "Fractal service doesn't have a 'context' attribute."
+                "Fractal service doesn't provide a 'context' object."
             )

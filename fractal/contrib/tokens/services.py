@@ -107,6 +107,7 @@ class StaticTokenService(TokenService):
             account="00000000-0000-0000-0000-000000000000",
             email="dummy@dummy.dummy",
             typ=typ,
+            roles=["user", "admin"],
         )
 
 

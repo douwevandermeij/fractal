@@ -1,5 +1,6 @@
 from typing import Dict, Iterator, Optional
 
+from fractal.core.exceptions import ObjectNotFoundException
 from fractal.core.repositories import Entity, Repository
 from fractal.core.specifications.generic.specification import Specification
 
@@ -25,6 +26,9 @@ class InMemoryRepositoryMixin(Repository[Entity]):
             lambda i: specification.is_satisfied_by(i), self.entities.values()
         ):
             return entity
+        if self.object_not_found_exception:
+            raise self.object_not_found_exception
+        raise ObjectNotFoundException(f"{self.entity.__name__} not found!")
 
     def find(self, specification: Optional[Specification] = None) -> Iterator[Entity]:
         if specification:

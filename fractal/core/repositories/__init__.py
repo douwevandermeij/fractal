@@ -1,12 +1,15 @@
 from abc import ABC, abstractmethod
 from typing import Generic, Iterator, Optional, TypeVar
 
+from fractal.core.exceptions import DomainException
 from fractal.core.specifications.generic.specification import Specification
 
 Entity = TypeVar("Entity")
 
 
 class Repository(Generic[Entity], ABC):
+    object_not_found_exception: Optional[DomainException] = None
+
     @abstractmethod
     def add(self, entity: Entity) -> Entity:
         raise NotImplementedError
