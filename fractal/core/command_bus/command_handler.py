@@ -1,13 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import List, Type
+from typing import Generic, Type, TypeVar
 
-from fractal.core.command_bus.command import Command
+Command = TypeVar("Command")
 
 
-class CommandHandler(ABC):
-    @abstractmethod
-    def commands(self) -> List[Type[Command]]:
-        """Returns list of commands that this handler can handle."""
+class CommandHandler(Generic[Command], ABC):
+    command: Type[Command] = None
 
     @abstractmethod
     def handle(self, command: Command):

@@ -1,5 +1,4 @@
 import datetime
-from typing import Type
 
 from django.dispatch import Signal
 
@@ -11,7 +10,7 @@ fractal_event_signal = Signal(providing_args=["message"])
 
 
 class DjangoSignalEventProjector(EventProjector):
-    def project(self, id: str, event: Type[SendingEvent]):
+    def project(self, id: str, event: SendingEvent):
         message = Message(
             id=id,
             occurred_on=datetime.datetime.now(tz=datetime.timezone.utc),

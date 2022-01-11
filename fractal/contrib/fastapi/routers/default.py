@@ -1,5 +1,5 @@
-import uuid
-from typing import Callable, Dict, List, Optional, Type
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, Type
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
@@ -11,15 +11,8 @@ from fractal.contrib.fastapi.routers.domain.models import AdapterInfo, Info
 from fractal.contrib.fastapi.routers.tokens import get_payload, get_payload_roles
 from fractal.contrib.tokens.fractal import DummyTokenServiceFractal
 from fractal.contrib.tokens.models import TokenPayload, TokenPayloadRoles
-from fractal.core.command_bus.commands import (
-    AddEntityCommand,
-    DeleteEntityCommand,
-    UpdateEntityCommand,
-)
 from fractal.core.models import Model
-from fractal.core.repositories.filter_repository_mixin import FilterRepositoryMixin
-from fractal.core.specifications.account_id_specification import AccountIdSpecification
-from fractal.core.specifications.id_specification import IdSpecification
+from fractal.core.services import Service
 from fractal.core.utils.application_context import ApplicationContext
 from fractal.core.utils.settings import Settings
 
@@ -62,126 +55,151 @@ def inject_default_routes(
     return router
 
 
+class DefaultRestRouterService(Service, ABC):
+    domain_entity_class: Type[Model]
+    entities_route: str
+    entity_route: str
+    entity_contract: Type[BaseModel]
+    create_entity_contract: Type[BaseModel]
+
+    @abstractmethod
+    def add_entity(
+        self,
+        contract: BaseModel,
+        **kwargs,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    def find_entities(
+        self,
+        q: str = "",
+        **kwargs,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_entity(
+        self,
+        entity_id: UUID,
+        **kwargs,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    def update_entity(
+        self,
+        entity_id: UUID,
+        contract: BaseModel,
+        **kwargs,
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete_entity(
+        self,
+        entity_id: UUID,
+        **kwargs,
+    ) -> Dict:
+        raise NotImplementedError
+
+
 def inject_default_rest_routes(
     fractal: Fractal,
     *,
-    domain_entity_class: Type[Model],
-    entities_route: str,
-    entity_route: str,
-    entity_repository_name: str,
-    entity_contract: Type[BaseModel],
-    search_fields: List[str] = None,
-    search_pre_processor: Callable = lambda i: i.lower(),
-    add_entity_command: Type[AddEntityCommand],
-    update_entity_command: Type[UpdateEntityCommand],
-    delete_entity_command: Type[DeleteEntityCommand],
+    router_service_class: Type[DefaultRestRouterService],
     roles: Dict[str, List[str]] = None,
 ):
-    if search_fields is None:
-        search_fields = []
     if roles is None:
         roles = {}
 
     router = APIRouter()
 
-    def entity_repository():
-        return getattr(fractal.context, entity_repository_name)
-
-    def to_entity(self, **kwargs):
-        if not self.id:
-            self.id = str(uuid.uuid4())
-        return super(create_entity_contract, self).to_entity(**kwargs)
-
-    create_entity_contract = type(
-        f"Create{entity_contract.__name__}",
-        (entity_contract,),
-        {
-            "id": "string",
-            "to_entity": to_entity,
-        },
-    )
-
     @router.post(
-        entities_route,
-        response_model=domain_entity_class,
+        router_service_class().entities_route,
+        response_model=router_service_class().domain_entity_class,
         status_code=status.HTTP_201_CREATED,
+        name=f"Add {router_service_class().domain_entity_class.__name__}",
     )
     def add_entity(
-        entity: create_entity_contract,
-        payload: TokenPayloadRoles = Depends(get_payload_roles(fractal, roles=roles.get("add", ["user"]))),
+        entity: router_service_class().create_entity_contract,
+        payload: TokenPayloadRoles = Depends(
+            get_payload_roles(fractal, roles=roles.get("add", ["user"]))
+        ),
     ):
-        try:
-            uuid.UUID(entity.id)
-        except ValueError:
-            entity.id = None
-        _entity = entity.to_entity(user_id=payload.sub, account_id=payload.account)
-        fractal.context.command_bus.handle(
-            add_entity_command(
-                entity=_entity,
-            ),
+        return router_service_class().add_entity(
+            contract=entity,
+            **payload.dict(),
         )
-        return _entity
 
     @router.get(
-        entities_route,
-        response_model=List[domain_entity_class],
+        router_service_class().entities_route,
+        response_model=List[router_service_class().domain_entity_class],
         status_code=status.HTTP_200_OK,
+        name=f"Find {router_service_class().domain_entity_class.__name__} entities",
     )
-    def entities(
-        q: Optional[str] = "", payload: TokenPayloadRoles = Depends(get_payload_roles(fractal, roles=roles.get("get", ["user"])))
+    def find_entities(
+        q: Optional[str] = "",
+        payload: TokenPayloadRoles = Depends(
+            get_payload_roles(fractal, roles=roles.get("get", ["user"]))
+        ),
     ):
-        if issubclass(entity_repository().__class__, FilterRepositoryMixin):
-            return list(
-                entity_repository().find_filter(
-                    q,
-                    fields=search_fields,
-                    specification=AccountIdSpecification(str(payload.account)),
-                    pre_processor=search_pre_processor,
-                )
-            )
-        else:
-            return list(
-                entity_repository().find(AccountIdSpecification(str(payload.account)))
-            )
+        return router_service_class().find_entities(
+            q=q,
+            **payload.dict(),
+        )
 
     @router.get(
-        entity_route, response_model=domain_entity_class, status_code=status.HTTP_200_OK
+        router_service_class().entity_route,
+        response_model=router_service_class().domain_entity_class,
+        status_code=status.HTTP_200_OK,
+        name=f"Get {router_service_class().domain_entity_class.__name__} entity",
     )
-    def entity(entity_id: UUID, payload: TokenPayloadRoles = Depends(get_payload_roles(fractal, roles=roles.get("get", ["user"])))):
-        return entity_repository().find_one(
-            AccountIdSpecification(str(payload.account)).And(
-                IdSpecification(str(entity_id))
-            )
+    def get_entity(
+        entity_id: UUID,
+        payload: TokenPayloadRoles = Depends(
+            get_payload_roles(fractal, roles=roles.get("get", ["user"]))
+        ),
+    ):
+        return router_service_class().get_entity(
+            entity_id=entity_id,
+            **payload.dict(),
         )
 
     @router.put(
-        entity_route, response_model=domain_entity_class, status_code=status.HTTP_200_OK
+        router_service_class().entity_route,
+        response_model=router_service_class().domain_entity_class,
+        status_code=status.HTTP_200_OK,
+        name=f"Update {router_service_class().domain_entity_class.__name__}",
     )
     def update_entity(
         entity_id: UUID,
-        entity: entity_contract,
-        payload: TokenPayloadRoles = Depends(get_payload_roles(fractal, roles=roles.get("update", ["user"]))),
+        entity: router_service_class().entity_contract,
+        payload: TokenPayloadRoles = Depends(
+            get_payload_roles(fractal, roles=roles.get("update", ["user"]))
+        ),
     ):
-        _entity = entity.to_entity(id=entity_id, user_id=payload.sub, account_id=payload.account)
-        fractal.context.command_bus.handle(
-            update_entity_command(
-                id=str(entity_id),
-                entity=_entity,
-            ),
+        return router_service_class().update_entity(
+            entity_id=entity_id,
+            contract=entity,
+            **payload.dict(),
         )
-        return _entity
 
-    @router.delete(entity_route, response_model=Dict, status_code=status.HTTP_200_OK)
+    @router.delete(
+        router_service_class().entity_route,
+        response_model=Dict,
+        status_code=status.HTTP_200_OK,
+        name=f"Delete {router_service_class().domain_entity_class.__name__}",
+    )
     def delete_entity(
-        entity_id: UUID, payload: TokenPayloadRoles = Depends(get_payload_roles(fractal, roles=roles.get("delete", ["user"])))
+        entity_id: UUID,
+        payload: TokenPayloadRoles = Depends(
+            get_payload_roles(fractal, roles=roles.get("delete", ["user"]))
+        ),
     ) -> Dict:
-        fractal.context.command_bus.handle(
-            delete_entity_command(
-                specification=AccountIdSpecification(str(payload.account)).And(
-                    IdSpecification(str(entity_id))
-                ),
-            ),
+        return router_service_class().delete_entity(
+            entity_id=entity_id,
+            **payload.dict(),
         )
-        return {}
 
     return router

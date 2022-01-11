@@ -1,4 +1,4 @@
-from typing import Generator, Generic, Optional
+from typing import Generator, Generic, Optional, Type
 
 from fractal.core.event_sourcing.event_store import EventStore
 from fractal.core.event_sourcing.event_stream import EventStream
@@ -9,7 +9,7 @@ from fractal.core.specifications.generic.specification import Specification
 
 
 class EventSourcedRepository(Generic[Entity], Repository[Entity]):
-    entity = Entity
+    entity: Type[Entity] = Entity
 
     def __init__(self, event_store: EventStore):
         self.event_store = event_store

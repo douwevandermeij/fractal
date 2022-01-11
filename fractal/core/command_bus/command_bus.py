@@ -1,25 +1,20 @@
 from collections import defaultdict
-from typing import List, Type
+from typing import List
 
 from fractal.core.command_bus.command import Command
 from fractal.core.command_bus.command_handler import CommandHandler
 
 
-class CommandBus(CommandHandler):
+class CommandBus:
     def __init__(self):
         self.handlers = defaultdict(list)
 
-    def commands(self) -> List[Type[Command]]:
-        return []
-
     def set_handlers(self, handlers: List[CommandHandler]):
         for handler in handlers:
-            for command in handler.commands():
-                self.handlers[command.__name__].append(handler)
+            self.add_handler(handler)
 
     def add_handler(self, handler: CommandHandler):
-        for command in handler.commands():
-            self.handlers[command.__name__].append(handler)
+        self.handlers[handler.command.__name__].append(handler)
 
     async def handle_async(self, command: Command):
         ret = {}

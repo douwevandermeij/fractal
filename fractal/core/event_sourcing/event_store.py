@@ -10,6 +10,7 @@ from fractal.core.event_sourcing.event_stream import EventStream
 from fractal.core.event_sourcing.message import Message
 from fractal.core.exceptions import DomainException
 from fractal.core.repositories import Repository
+from fractal.core.repositories.inmemory_repository_mixin import InMemoryRepositoryMixin
 from fractal.core.specifications.generic.specification import Specification
 
 
@@ -39,6 +40,12 @@ class EventStore(ABC):
 
 class EventStoreRepository(Repository[Message], ABC):
     entity = Message
+
+
+class InMemoryEventStoreRepository(
+    EventStoreRepository, InMemoryRepositoryMixin[Message]
+):
+    pass
 
 
 class BasicEventStore(EventStore, ABC):

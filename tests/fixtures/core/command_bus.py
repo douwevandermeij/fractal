@@ -1,5 +1,3 @@
-from typing import List, Type
-
 import pytest
 
 
@@ -23,10 +21,8 @@ def command_handler(command):
     from fractal.core.command_bus.command_handler import CommandHandler
 
     class FakeCommandHandler(CommandHandler):
-        def commands(self) -> List[Type[Command]]:
-            return [
-                type(command),
-            ]
+        def __init__(self):
+            self.command = type(command)
 
         def handle(self, command: Command):
             return 1
@@ -40,10 +36,8 @@ def async_command_handler(command):
     from fractal.core.command_bus.command_handler import CommandHandler
 
     class FakeCommandHandler(CommandHandler):
-        def commands(self) -> List[Type[Command]]:
-            return [
-                type(command),
-            ]
+        def __init__(self):
+            self.command = type(command)
 
         async def handle(self, command: Command):
             return 1

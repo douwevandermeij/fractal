@@ -1,10 +1,6 @@
 import pytest
 
 
-def test_commands(command_bus):
-    assert command_bus.commands() == []
-
-
 def test_add_handler(command_bus, command, command_handler):
     command_bus.add_handler(command_handler)
 

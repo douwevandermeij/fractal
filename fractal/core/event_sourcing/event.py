@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable, Dict, List, Type
 
 from fractal.core.command_bus.command import Command
 
@@ -35,4 +35,10 @@ class SendingEvent(BasicSendingEvent, ABC):
 @dataclass
 class ReceivingEvent(Event):
     def to_command(self):
+        raise NotImplementedError
+
+
+class EventCommandMapper(ABC):
+    @abstractmethod
+    def mappers(self) -> Dict[Type[Event], List[Callable[[Event], Command]]]:
         raise NotImplementedError
