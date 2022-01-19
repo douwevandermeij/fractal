@@ -8,6 +8,7 @@ Entity = TypeVar("Entity")
 
 
 class Repository(Generic[Entity], ABC):
+    entity: Optional[Entity] = None
     object_not_found_exception: Optional[DomainException] = None
 
     @abstractmethod

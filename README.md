@@ -71,8 +71,10 @@ A typical application folder structure using Fractal looks like:
 
     app/
     ├── adapters/
+    │   ├── __init__.py
     │   └── products.py
     ├── domain/
+    │   ├── __init__.py
     │   └── products.py
     ├── context.py
     ├── main.py
@@ -88,6 +90,36 @@ While using Fractal as a way to have separation of concerns with separate isolat
 applications, it's also possible to wrap Fractal in a small application and expose as REST API using, for example,
 FastAPI, Flask or Django. Next that application can be deployed again in a Docker environment. This makes Fractal a
 perfect fit for microservices as well.
+
+As a rule of thumb, continuing on the separation of concerns, the folder/file structure inside a Fractal application
+should follow the naming of the subject (rather than the naming of the responsibilities of module).
+In the example app this is denoted by `products.py` in both the `domain` folder as the `adapters` folder.
+When the file is getting too big to be easily readable or maintainable, it can be converted into a package.
+Within the package the files can be named by their responsibilities.
+
+An example package folder structure:
+
+    app/
+    ├── adapters/
+    │   └── products/
+    │       ├── __init__.py
+    │       ├── django.py
+    │       └── fastapi.py
+    ├── domain/
+    │   └── products/
+    │       ├── __init__.py
+    │       ├── commands/
+    │       │   ├── __init__.py
+    │       │   └── add.py
+    │       └── events.py
+    ├── context.py
+    ├── main.py
+    └── settings.py
+
+As can be seen in the example package folder structure, in the `domain` the package contains files about certain
+actions or responsibilities andf in the `adapters` folder it's more about the target implementation.
+Of course the target implementation file can be converted into a package again and contain files for certain
+responsibilities again.
 
 #### Example file contents
 
@@ -146,7 +178,7 @@ class ApplicationContext(BaseContext):
             )
 ```
 
-##### domain/users.py
+##### domain/products.py
 
 ```python
 from abc import ABC
@@ -166,7 +198,7 @@ class ProductRepository(Repository[Product], ABC):
     pass
 ```
 
-##### adapters/users.py
+##### adapters/products.py
 
 ```python
 from fractal.core.repositories.inmemory_repository_mixin import InMemoryRepositoryMixin
@@ -251,8 +283,6 @@ class AddProductCommandHandler(CommandHandler):
 ```python
 from fractal.core.utils.application_context import ApplicationContext as BaseContext
 
-from app.settings import Settings
-
 
 class ApplicationContext(BaseContext):
   
@@ -283,6 +313,14 @@ Projectors can do anything:
 
 Each projector should only be doing one thing.
 The relation between an event and a projector is one-to-many.
+
+**!! CAVEAT !!**
+
+When using events, and especially when sending events to an external service, be aware that these other services might
+have a dependency on the structure of the event.
+Changing existing events is **dangerous**.
+The best approach here is to apply the _open-closed principle_ of SOLID, open for extension, closed for modification.
+Alternatively creating a new event is also possible.
 
 #### Example file contents
 
@@ -395,8 +433,6 @@ class ProductEventCommandMapper(EventCommandMapper):
 
 ```python
 from fractal.core.utils.application_context import ApplicationContext as BaseContext
-
-from app.settings import Settings
 
 
 class ApplicationContext(BaseContext):
