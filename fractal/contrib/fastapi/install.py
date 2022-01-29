@@ -19,7 +19,11 @@ from fractal.core.utils.settings import Settings
 
 
 def install_fastapi(settings: Settings):
-    app = FastAPI(root_path=getattr(settings, "OPENAPI_PREFIX_PATH", ""))
+    app = FastAPI(
+        title=getattr(settings, "APP_NAME", "Fractal service"),
+        version=getattr(settings, "APP_VERSION", "0.1.0"),
+        root_path=getattr(settings, "OPENAPI_PREFIX_PATH", ""),
+    )
 
     app.add_middleware(
         CORSMiddleware,

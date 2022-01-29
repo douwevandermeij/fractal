@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from datetime import date
 from decimal import Decimal
-from typing import Generator, Optional
+from typing import Iterator, Optional
 
 from google.cloud.firestore_v1 import Client
 
@@ -47,11 +47,12 @@ class FirestoreRepositoryMixin(Repository[Entity]):
     def find_one(self, specification: Specification) -> Optional[Entity]:
         _filter = FirestoreSpecificationBuilder.build(specification)
         collection = self.collection
-        if isinstance(_filter, list):
-            for f in _filter:
-                collection = collection.where(*f)
-        else:
-            collection = collection.where(*_filter)
+        if _filter:
+            if isinstance(_filter, list):
+                for f in _filter:
+                    collection = collection.where(*f)
+            else:
+                collection = collection.where(*_filter)
         for doc in filter(
             lambda i: specification.is_satisfied_by(AttrDict(i.to_dict())),
             collection.stream(),
@@ -60,14 +61,15 @@ class FirestoreRepositoryMixin(Repository[Entity]):
 
     def find(
         self, specification: Specification = None
-    ) -> Generator[Entity, None, None]:
+    ) -> Iterator[Entity]:
         _filter = FirestoreSpecificationBuilder.build(specification)
         collection = self.collection
-        if isinstance(_filter, list):
-            for f in _filter:
-                collection = collection.where(*f)
-        else:
-            collection = collection.where(*_filter)
+        if _filter:
+            if isinstance(_filter, list):
+                for f in _filter:
+                    collection = collection.where(*f)
+            else:
+                collection = collection.where(*_filter)
         for doc in collection.stream():
             yield self.entity(**doc.to_dict())
 
