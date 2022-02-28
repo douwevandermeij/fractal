@@ -12,7 +12,7 @@ from fractal.core.specifications.generic.specification import Specification
 
 
 def get_firestore_client(settings: Settings):
-    if not settings.firestore_client:
+    if not hasattr(settings, "firestore_client"):
         import firebase_admin
         from firebase_admin import firestore
 
