@@ -23,6 +23,10 @@ def install_fastapi(settings: Settings):
         title=getattr(settings, "APP_NAME", "Fractal service"),
         version=getattr(settings, "APP_VERSION", "0.1.0"),
         root_path=getattr(settings, "OPENAPI_PREFIX_PATH", ""),
+        openapi_url="/openapi.json"
+        if str(getattr(settings, "APIDOCS_ENABLED", "true")).lower()
+        in ["1", "yes", "true"]
+        else None,
     )
 
     app.add_middleware(

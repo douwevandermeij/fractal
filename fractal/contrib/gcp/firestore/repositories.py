@@ -5,9 +5,26 @@ from typing import Iterator, Optional
 
 from google.cloud.firestore_v1 import Client
 
+from fractal import Settings
 from fractal.contrib.gcp.firestore.specifications import FirestoreSpecificationBuilder
 from fractal.core.repositories import Entity, Repository
 from fractal.core.specifications.generic.specification import Specification
+
+
+def get_firestore_client(settings: Settings):
+    if not settings.firestore_client:
+        import firebase_admin
+        from firebase_admin import firestore
+
+        cred = None
+        if service_account_key := getattr(settings, "GCP_SERVICE_ACCOUNT_KEY"):
+            from firebase_admin import credentials
+
+            cred = credentials.Certificate(service_account_key)
+
+        firebase_admin.initialize_app(cred)
+        settings.firestore_client = firestore.client()
+    return settings.firestore_client
 
 
 class AttrDict(dict):
@@ -23,8 +40,14 @@ class FirestoreRepositoryMixin(Repository[Entity]):
 
     entity = Entity
 
-    def __init__(self, client: Client):
-        self.collection = client.collection(self.entity.__name__.lower())
+    def __init__(self, settings: Settings):
+        client: Client = get_firestore_client(settings)
+        if app_name := getattr(settings, "APP_NAME"):
+            self.collection = client.collection(
+                f"{app_name.lower()}-{self.entity.__name__.lower()}"
+            )
+        else:
+            self.collection = client.collection(self.entity.__name__.lower())
 
     def add(self, entity: Entity) -> Entity:
         doc_ref = self.collection.document(entity.id)
@@ -59,9 +82,7 @@ class FirestoreRepositoryMixin(Repository[Entity]):
         ):
             return self.entity(**doc.to_dict())
 
-    def find(
-        self, specification: Specification = None
-    ) -> Iterator[Entity]:
+    def find(self, specification: Specification = None) -> Iterator[Entity]:
         _filter = FirestoreSpecificationBuilder.build(specification)
         collection = self.collection
         if _filter:

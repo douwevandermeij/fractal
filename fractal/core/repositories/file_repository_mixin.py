@@ -2,7 +2,6 @@ import json
 import os
 from typing import Iterator, Optional
 
-from fractal import Settings
 from fractal.core.exceptions import ObjectNotFoundException
 from fractal.core.repositories import Entity, Repository
 from fractal.core.specifications.generic.operators import NotSpecification
@@ -14,7 +13,7 @@ from fractal.core.utils.json_encoder import EnhancedEncoder
 class FileRepositoryMixin(Repository[Entity]):
     @property
     def _filename(self) -> str:
-        return os.path.join(Settings().ROOT_DIR, f"{self.__class__.__name__}.txt")
+        return os.path.join(self.root_dir, f"{self.__class__.__name__}.txt")
 
     @property
     def _entities(self):
@@ -23,6 +22,9 @@ class FileRepositoryMixin(Repository[Entity]):
         with open(self._filename, "r") as fp:
             for line in fp.readlines():
                 yield self.entity(**json.loads(line))
+
+    def __init__(self, root_dir: str):
+        self.root_dir = root_dir
 
     def add(self, entity: Entity) -> Entity:
         with open(self._filename, "a") as fp:
@@ -41,11 +43,13 @@ class FileRepositoryMixin(Repository[Entity]):
     def remove_one(self, specification: Specification):
         entities = list(self.find(NotSpecification(specification)))
         with open(self._filename, "w") as fp:
-            fp.writelines([json.dumps(e.asdict(), cls=EnhancedEncoder) + "\n" for e in entities])
+            fp.writelines(
+                [json.dumps(e.asdict(), cls=EnhancedEncoder) + "\n" for e in entities]
+            )
 
     def find_one(self, specification: Specification) -> Optional[Entity]:
         for entity in filter(
-                lambda i: specification.is_satisfied_by(i), self._entities
+            lambda i: specification.is_satisfied_by(i), self._entities
         ):
             return entity
         if self.object_not_found_exception:
