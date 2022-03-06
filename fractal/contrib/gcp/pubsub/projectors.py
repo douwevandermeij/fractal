@@ -10,6 +10,7 @@ from google.cloud import pubsub_v1
 from fractal.core.event_sourcing.event import BasicSendingEvent
 from fractal.core.event_sourcing.event_projector import EventProjector
 from fractal.core.event_sourcing.message import Message
+from fractal.core.utils.json_encoder import EnhancedEncoder
 
 logger = logging.getLogger("api")
 
@@ -22,11 +23,9 @@ class PubSubEventBusProjector(EventProjector):
     def __init__(
         self,
         project_id: str,
-        topic: str,
-        json_encoder: Optional[Type[JSONEncoder]] = None,
+        json_encoder: Optional[Type[JSONEncoder]] = EnhancedEncoder,
     ):
         self.project_id = project_id
-        self.topic = topic
         self.publisher = pubsub_v1.PublisherClient()
         self.project_path = f"projects/{project_id}"
         self.json_encoder = json_encoder
@@ -34,7 +33,7 @@ class PubSubEventBusProjector(EventProjector):
     def project(self, id: str, event: BasicSendingEvent):
         # The `topic_path` method creates a fully qualified identifier
         # in the form `projects/{project_id}/topics/{topic_id}`
-        topic_path = self.publisher.topic_path(self.project_id, self.topic)
+        topic_path = self.publisher.topic_path(self.project_id, f"{event.aggregate_root_type.__name__.lower()}-events")
 
         # Check if topic exists
         if topic_path not in [

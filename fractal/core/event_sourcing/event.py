@@ -22,6 +22,11 @@ class BasicSendingEvent(Event, ABC):
     def aggregate_root_id(self):
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def aggregate_root_type(self):
+        raise NotImplementedError
+
 
 @dataclass
 class SendingEvent(BasicSendingEvent, ABC):
