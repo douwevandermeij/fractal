@@ -28,6 +28,10 @@ def sending_event(command):
         def aggregate_root_id(self):
             return self.id
 
+        @property
+        def aggregate_root_type(self):
+            return self.__class__
+
     return FakeSendingEvent(command, "1")
 
 
@@ -46,6 +50,10 @@ def not_mapped_sending_event(command):
         @property
         def aggregate_root_id(self):
             return self.id
+
+        @property
+        def aggregate_root_type(self):
+            return self.__class__
 
     return NotMappedSendingEvent(command, "1")
 
