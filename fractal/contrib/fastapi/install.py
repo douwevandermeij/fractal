@@ -2,7 +2,6 @@ import logging
 
 try:
     import sentry_sdk
-    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 except ImportError:
     sentry = False
 else:
@@ -39,9 +38,6 @@ def install_fastapi(settings: Settings):
 
     if sentry:
         sentry_sdk.init(dsn=getattr(settings, "SENTRY_DSN", ""))
-        app.add_middleware(
-            SentryAsgiMiddleware,
-        )
 
     @app.exception_handler(DomainException)
     def unicorn_domain_exception_handler(request: Request, exc: DomainException):
@@ -50,6 +46,9 @@ def install_fastapi(settings: Settings):
             logger.warning(f"{exc.code} - {exc.message}")
         else:
             logger.error(f"{exc.code} - {exc.message}")
+
+        if sentry:
+            sentry_sdk.capture_exception(exc)
 
         return JSONResponse(
             status_code=exc.status_code,
@@ -63,6 +62,9 @@ def install_fastapi(settings: Settings):
     @app.exception_handler(Exception)
     def unicorn_exception_handler(request: Request, exc: Exception):
         logging.error(exc)
+
+        if sentry:
+            sentry_sdk.capture_exception(exc)
 
         return JSONResponse(
             status_code=500,
