@@ -21,7 +21,16 @@ class Model:
 
     def asdict(self):
         field_names = set(f.name for f in fields(self))
-        return {k: v for k, v in self.__dict__.items() if k in field_names}
+
+        def _asdict(v):
+            if isinstance(v, Model):
+                return v.asdict()
+            elif isinstance(v, list):
+                return [i.asdict() for i in v]
+            return v
+
+        ret = {k: _asdict(v) for k, v in self.__dict__.items() if k in field_names}
+        return ret
 
 
 @dataclass

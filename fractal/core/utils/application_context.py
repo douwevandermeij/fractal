@@ -1,10 +1,18 @@
+import importlib
 import logging
 import os
+import pathlib
 from typing import List, Tuple
 
 
 class ApplicationContext(object):
     instance = None
+    settings = None
+    registered_repositories = []
+    registered_command_handlers = []
+    registered_ingress_services = []
+    registered_egress_services = []
+    registered_internal_services = []
 
     def __new__(cls, dotenv=True, *args, **kwargs):
         if not isinstance(cls.instance, cls):
@@ -16,6 +24,35 @@ class ApplicationContext(object):
             cls.instance.load()
         return cls.instance
 
+    @classmethod
+    def register_repository(cls, name):
+        setattr(cls, name, None)
+        def inner(select_repository):
+            cls.registered_repositories.append((name, select_repository))
+        return inner
+
+    @classmethod
+    def register_command_handler(cls, command_handler):
+        cls.registered_command_handlers.append(command_handler)
+
+    @classmethod
+    def register_ingress_service(cls, name):
+        def inner(service):
+            cls.registered_ingress_services.append((name, service))
+        return inner
+
+    @classmethod
+    def register_egress_service(cls, name):
+        def inner(service):
+            cls.registered_egress_services.append((name, service))
+        return inner
+
+    @classmethod
+    def register_internal_service(cls, name):
+        def inner(service):
+            cls.registered_internal_services.append((name, service))
+        return inner
+
     def load(self):
         from fractal.core.utils.loggers import init_logging
 
@@ -24,6 +61,13 @@ class ApplicationContext(object):
         self.repositories = []
         self.repository_names = []
         self.service_names = []
+
+        root_dir = pathlib.Path(self.settings.ROOT_DIR)
+        for file_name in pathlib.Path(os.path.dirname(self.settings.BASE_DIR)).glob('service/**/*.py'):
+            parts = file_name.parts[len(root_dir.parts):]
+            if parts[-1].startswith("_"):
+                parts = parts[:-1]
+            importlib.import_module(".".join(parts).replace(".py", ""))
 
         self.load_internal_services()
         self.load_repositories()
@@ -51,23 +95,115 @@ class ApplicationContext(object):
 
     def load_internal_services(self):
         """Load services for internal use of the domain."""
+        for name, service in self.registered_internal_services:
+            self.install_service(service, name=name)
+
+        if hasattr(self.settings, "SECRET_KEY") and self.settings.SECRET_KEY:
+            from fractal.contrib.tokens.services import SymmetricJwtTokenService
+
+            self.token_service = SymmetricJwtTokenService(
+                issuer=self.settings.APP_NAME,
+                secret=self.settings.SECRET_KEY,
+            )
+        else:
+            from fractal.contrib.tokens.services import StaticTokenService
+
+            self.token_service = StaticTokenService()
 
     def load_repositories(self):
         """Load repositories for data access"""
+        for name, repo in self.registered_repositories:
+            setattr(self, name, self.install_repository(repo(self.settings), name=name))
+
+        if hasattr(self.settings, "EVENT_STORE_BACKEND"):
+            if self.settings.EVENT_STORE_BACKEND == "firestore":
+                from fractal.contrib.gcp.firestore.event_store import (
+                    FirestoreEventStoreRepository,
+                )
+                from fractal.core.event_sourcing.event_store import EventStoreRepository
+
+                self.event_store_repository: EventStoreRepository = (
+                    FirestoreEventStoreRepository(self.settings)
+                )
+
+                from fractal.contrib.fastapi.utils.json_encoder import (
+                    BaseModelEnhancedEncoder,
+                )
+                from fractal.core.event_sourcing.event_store import (
+                    EventStore,
+                    JsonEventStore,
+                )
+
+                from fractal.core.event_sourcing.event import BasicSendingEvent
+                from fractal.core.utils.subclasses import all_subclasses
+
+                self.event_store: EventStore = JsonEventStore(
+                    event_store_repository=self.event_store_repository,
+                    events=all_subclasses(BasicSendingEvent),
+                    json_encoder=BaseModelEnhancedEncoder,
+                )
+            else:
+                from fractal.core.event_sourcing.event_store import (
+                    EventStoreRepository,
+                    InMemoryEventStoreRepository,
+                )
+
+                self.event_store_repository: EventStoreRepository = (
+                    InMemoryEventStoreRepository()
+                )
+
+                from fractal.core.event_sourcing.event_store import (
+                    EventStore,
+                    ObjectEventStore,
+                )
+
+                self.event_store: EventStore = ObjectEventStore(
+                    event_store_repository=self.event_store_repository,
+                )
 
     def load_egress_services(self):
         """Load services to external interfaces that are initiated by this service (outbound)"""
+        for name, service in self.registered_egress_services:
+            self.install_service(service, name=name)
 
     def load_event_projectors(self):
-        return []
+        from fractal.core.event_sourcing.projectors.command_bus_projector import (
+            CommandBusProjector,
+        )
+
+        from fractal.core.event_sourcing.event import EventCommandMapper
+        from fractal.core.utils.subclasses import all_subclasses
+
+        self.command_bus_projector = CommandBusProjector(
+            lambda: self.command_bus,
+            all_subclasses(EventCommandMapper),
+        )
+
+        from fractal.core.event_sourcing.projectors.event_store_projector import (
+            EventStoreProjector,
+        )
+        from fractal.core.event_sourcing.projectors.print_projector import (
+            PrintEventProjector,
+        )
+
+        return [
+            self.command_bus_projector,
+            EventStoreProjector(self.event_store),
+            PrintEventProjector(),
+        ]
 
     def load_command_bus(self):
         from fractal.core.command_bus.command_bus import CommandBus
 
         self.command_bus = CommandBus()
 
+        for handler in self.registered_command_handlers:
+            handler.install(self)
+
     def load_ingress_services(self):
         """Load services to external interfaces that are initiated by the external services (inbound)"""
+        for name, service in self.registered_ingress_services:
+            self.install_service(service, name=name)
 
     def install_repository(self, repository, *, name=""):
         if not name:

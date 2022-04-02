@@ -17,7 +17,7 @@ class CommandBusProjector(EventProjector):
     ):
         self.command_bus_func = command_bus_func
         self.mappers = {
-            event: mapper for m in mappers for event, mapper in m.mappers().items()
+            event: mapper for m in mappers for event, mapper in m().mappers().items()
         }
 
     def project(self, id: str, event: Union[SendingEvent, ReceivingEvent]):
