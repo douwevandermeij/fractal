@@ -14,11 +14,11 @@ def test_default_routes_info(fastapi_client, token):
 
     response = fastapi_client.get(Routes.INFO, headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
-    assert json.loads(response.content) == [
-        {"adapter": "InMemoryRepository", "status_ok": True},
-        {"adapter": "FakeService", "status_ok": True},
-        {"adapter": "DummyJsonTokenService", "status_ok": True},
-    ]
+    assert {(i["adapter"], i["status_ok"]) for i in json.loads(response.content)} == {
+        ("InMemoryRepository", True),
+        ("FakeService", True),
+        ("DummyJsonTokenService", True),
+    }
 
 
 def test_default_routes_info_token_error(failing_service_fastapi_client):
@@ -33,12 +33,12 @@ def test_default_routes_info_error(failing_service_fastapi_client, token):
 
     response = failing_service_fastapi_client.get(Routes.INFO, headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
-    assert json.loads(response.content) == [
-        {"adapter": "InMemoryRepository", "status_ok": True},
-        {"adapter": "FakeService", "status_ok": True},
-        {"adapter": "DummyJsonTokenService", "status_ok": True},
-        {"adapter": "FailingService", "status_ok": False},
-    ]
+    assert {(i["adapter"], i["status_ok"]) for i in json.loads(response.content)} == {
+        ("InMemoryRepository", True),
+        ("FakeService", True),
+        ("DummyJsonTokenService", True),
+        ("FailingService", False),
+    }
 
 
 def test_not_existing_route(failing_route_fastapi_client):

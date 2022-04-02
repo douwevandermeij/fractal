@@ -33,7 +33,9 @@ class PubSubEventBusProjector(EventProjector):
     def project(self, id: str, event: BasicSendingEvent):
         # The `topic_path` method creates a fully qualified identifier
         # in the form `projects/{project_id}/topics/{topic_id}`
-        topic_path = self.publisher.topic_path(self.project_id, f"{event.aggregate_root_type.__name__.lower()}-events")
+        topic_path = self.publisher.topic_path(
+            self.project_id, f"{event.aggregate_root_type.__name__.lower()}-events"
+        )
 
         # Check if topic exists
         if topic_path not in [

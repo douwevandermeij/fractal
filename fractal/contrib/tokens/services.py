@@ -136,8 +136,8 @@ class SymmetricJwtTokenService(JwtTokenService):
 
     @classmethod
     def install(cls, context: ApplicationContext):
-        app_name, app_env, app_domain, secret_key = context.get_parameters(
-            ["app_name", "app_env", "app_domain", "secret_key"]
+        app_name, app_env, app_domain, secret_key = context.settings.get_parameters(
+            ["APP_NAME", "APP_ENV", "APP_DOMAIN", "SECRET_KEY"]
         )
         yield cls(
             f"{app_name}@{app_env}.{app_domain}",

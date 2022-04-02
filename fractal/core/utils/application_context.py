@@ -27,8 +27,10 @@ class ApplicationContext(object):
     @classmethod
     def register_repository(cls, name):
         setattr(cls, name, None)
+
         def inner(select_repository):
             cls.registered_repositories.append((name, select_repository))
+
         return inner
 
     @classmethod
@@ -39,18 +41,21 @@ class ApplicationContext(object):
     def register_ingress_service(cls, name):
         def inner(service):
             cls.registered_ingress_services.append((name, service))
+
         return inner
 
     @classmethod
     def register_egress_service(cls, name):
         def inner(service):
             cls.registered_egress_services.append((name, service))
+
         return inner
 
     @classmethod
     def register_internal_service(cls, name):
         def inner(service):
             cls.registered_internal_services.append((name, service))
+
         return inner
 
     def load(self):
@@ -58,13 +63,15 @@ class ApplicationContext(object):
 
         init_logging(os.getenv("LOG_LEVEL", "INFO"))
         self.logger = logging.getLogger("app")
-        self.repositories = []
-        self.repository_names = []
-        self.service_names = []
+        self.repositories = set()
+        self.repository_names = set()
+        self.service_names = set()
 
         root_dir = pathlib.Path(self.settings.ROOT_DIR)
-        for file_name in pathlib.Path(os.path.dirname(self.settings.BASE_DIR)).glob('service/**/*.py'):
-            parts = file_name.parts[len(root_dir.parts):]
+        for file_name in pathlib.Path(os.path.dirname(self.settings.BASE_DIR)).glob(
+            "service/**/*.py"
+        ):
+            parts = file_name.parts[len(root_dir.parts) :]
             if parts[-1].startswith("_"):
                 parts = parts[:-1]
             importlib.import_module(".".join(parts).replace(".py", ""))
@@ -101,6 +108,7 @@ class ApplicationContext(object):
         if hasattr(self.settings, "SECRET_KEY") and self.settings.SECRET_KEY:
             from fractal.contrib.tokens.services import SymmetricJwtTokenService
 
+            self.install_service(SymmetricJwtTokenService, name="token_service")
             self.token_service = SymmetricJwtTokenService(
                 issuer=self.settings.APP_NAME,
                 secret=self.settings.SECRET_KEY,
@@ -108,58 +116,59 @@ class ApplicationContext(object):
         else:
             from fractal.contrib.tokens.services import StaticTokenService
 
-            self.token_service = StaticTokenService()
+            self.install_service(StaticTokenService, name="token_service")
 
     def load_repositories(self):
         """Load repositories for data access"""
         for name, repo in self.registered_repositories:
             setattr(self, name, self.install_repository(repo(self.settings), name=name))
 
-        if hasattr(self.settings, "EVENT_STORE_BACKEND"):
-            if self.settings.EVENT_STORE_BACKEND == "firestore":
-                from fractal.contrib.gcp.firestore.event_store import (
-                    FirestoreEventStoreRepository,
-                )
-                from fractal.core.event_sourcing.event_store import EventStoreRepository
+        if (
+            hasattr(self.settings, "EVENT_STORE_BACKEND")
+            and self.settings.EVENT_STORE_BACKEND == "firestore"
+        ):
+            from fractal.contrib.gcp.firestore.event_store import (
+                FirestoreEventStoreRepository,
+            )
+            from fractal.core.event_sourcing.event_store import EventStoreRepository
 
-                self.event_store_repository: EventStoreRepository = (
-                    FirestoreEventStoreRepository(self.settings)
-                )
+            self.event_store_repository: EventStoreRepository = (
+                FirestoreEventStoreRepository(self.settings)
+            )
 
-                from fractal.contrib.fastapi.utils.json_encoder import (
-                    BaseModelEnhancedEncoder,
-                )
-                from fractal.core.event_sourcing.event_store import (
-                    EventStore,
-                    JsonEventStore,
-                )
+            from fractal.contrib.fastapi.utils.json_encoder import (
+                BaseModelEnhancedEncoder,
+            )
+            from fractal.core.event_sourcing.event import BasicSendingEvent
+            from fractal.core.event_sourcing.event_store import (
+                EventStore,
+                JsonEventStore,
+            )
+            from fractal.core.utils.subclasses import all_subclasses
 
-                from fractal.core.event_sourcing.event import BasicSendingEvent
-                from fractal.core.utils.subclasses import all_subclasses
+            self.event_store: EventStore = JsonEventStore(
+                event_store_repository=self.event_store_repository,
+                events=all_subclasses(BasicSendingEvent),
+                json_encoder=BaseModelEnhancedEncoder,
+            )
+        else:
+            from fractal.core.event_sourcing.event_store import (
+                EventStoreRepository,
+                InMemoryEventStoreRepository,
+            )
 
-                self.event_store: EventStore = JsonEventStore(
-                    event_store_repository=self.event_store_repository,
-                    events=all_subclasses(BasicSendingEvent),
-                    json_encoder=BaseModelEnhancedEncoder,
-                )
-            else:
-                from fractal.core.event_sourcing.event_store import (
-                    EventStoreRepository,
-                    InMemoryEventStoreRepository,
-                )
+            self.event_store_repository: EventStoreRepository = (
+                InMemoryEventStoreRepository()
+            )
 
-                self.event_store_repository: EventStoreRepository = (
-                    InMemoryEventStoreRepository()
-                )
+            from fractal.core.event_sourcing.event_store import (
+                EventStore,
+                ObjectEventStore,
+            )
 
-                from fractal.core.event_sourcing.event_store import (
-                    EventStore,
-                    ObjectEventStore,
-                )
-
-                self.event_store: EventStore = ObjectEventStore(
-                    event_store_repository=self.event_store_repository,
-                )
+            self.event_store: EventStore = ObjectEventStore(
+                event_store_repository=self.event_store_repository,
+            )
 
     def load_egress_services(self):
         """Load services to external interfaces that are initiated by this service (outbound)"""
@@ -167,11 +176,10 @@ class ApplicationContext(object):
             self.install_service(service, name=name)
 
     def load_event_projectors(self):
+        from fractal.core.event_sourcing.event import EventCommandMapper
         from fractal.core.event_sourcing.projectors.command_bus_projector import (
             CommandBusProjector,
         )
-
-        from fractal.core.event_sourcing.event import EventCommandMapper
         from fractal.core.utils.subclasses import all_subclasses
 
         self.command_bus_projector = CommandBusProjector(
@@ -210,8 +218,8 @@ class ApplicationContext(object):
             from fractal.core.utils.string import camel_to_snake
 
             name = camel_to_snake(repository.__class__.__name__)
-        self.repository_names.append(name)
-        self.repositories.append(repository)
+        self.repository_names.add(name)
+        self.repositories.add(repository)
         return repository
 
     def install_service(self, service, *, name=""):
@@ -219,7 +227,7 @@ class ApplicationContext(object):
             from fractal.core.utils.string import camel_to_snake
 
             name = camel_to_snake(service.__name__)
-        self.service_names.append(name)
+        self.service_names.add(name)
         setattr(
             ApplicationContext, name, property(lambda self: next(service.install(self)))
         )

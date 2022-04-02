@@ -9,6 +9,8 @@ def settings_class():
 
     class FakeSettings(Settings):
         APP_NAME = os.getenv("APP_NAME", "app_name")
+        BASE_DIR = os.getcwd()
+        ROOT_DIR = os.getcwd()
 
         def load(self):
             self.WEBSITE_HOST = os.getenv("WEBSITE_HOST", "http://localhost:8000")
@@ -23,37 +25,34 @@ def settings(settings_class):
 
 @pytest.fixture
 def fake_application_context_class(
-    inmemory_repository, fake_service_class, another_fake_service_class
+    inmemory_repository, fake_service_class, another_fake_service_class, settings_class
 ):
     from fractal.core.utils.application_context import ApplicationContext
 
     class FakeApplicationContext(ApplicationContext):
+        settings = settings_class()
+
         def load_internal_services(self):
+            super(FakeApplicationContext, self).load_internal_services()
+
             if os.getenv("FAKE_SERVICE", "") == "another":
                 self.install_service(another_fake_service_class, name="fake_service")
             else:
                 self.install_service(fake_service_class)
 
         def load_repositories(self):
+            super(FakeApplicationContext, self).load_repositories()
+
             self.install_repository(inmemory_repository)
-
-        def load_egress_services(self):
-            pass
-
-        def load_event_projectors(self):
-            return []
-
-        def load_command_bus(self):
-            super(FakeApplicationContext, self).load_command_bus()
-
-        def load_ingress_services(self):
-            pass
 
     return FakeApplicationContext
 
 
 @pytest.fixture
-def empty_application_context():
+def empty_application_context(settings_class):
     from fractal.core.utils.application_context import ApplicationContext
 
-    return ApplicationContext()
+    class EmptyApplicationContext(ApplicationContext):
+        settings = settings_class()
+
+    return EmptyApplicationContext()
