@@ -55,6 +55,14 @@ class TokenService(Service):
     def verify(self, token: str, *, typ: str):
         raise NotImplementedError
 
+    @abstractmethod
+    def decode(self, token: str):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_unverified_claims(self, token: str):
+        raise NotImplementedError
+
 
 class DummyJsonTokenService(TokenService):
     def generate(
@@ -70,6 +78,12 @@ class DummyJsonTokenService(TokenService):
             return json.loads(token)
         except Exception:
             raise TokenInvalidException()
+
+    def decode(self, token: str):
+        return json.loads(token)
+
+    def get_unverified_claims(self, token: str):
+        return self.decode(token)
 
 
 class DummyTokenService(TokenService):
@@ -90,6 +104,18 @@ class DummyTokenService(TokenService):
             typ=typ,
         )
 
+    def decode(self, token: str):
+        return dict(
+            iss="dummy",
+            sub=str(uuid.uuid4()),
+            account=str(uuid.uuid4()),
+            email="dummy@dummy.dummy",
+            typ="access",
+        )
+
+    def get_unverified_claims(self, token: str):
+        return self.decode(token)
+
 
 class StaticTokenService(TokenService):
     def generate(
@@ -109,6 +135,19 @@ class StaticTokenService(TokenService):
             typ=typ,
             roles=["user", "admin"],
         )
+
+    def decode(self, token: str):
+        return dict(
+            iss="dummy",
+            sub="00000000-0000-0000-0000-000000000000",
+            account="00000000-0000-0000-0000-000000000000",
+            email="dummy@dummy.dummy",
+            typ="access",
+            roles=["user", "admin"],
+        )
+
+    def get_unverified_claims(self, token: str):
+        return self.decode(token)
 
 
 class JwtTokenService(TokenService, ABC):
@@ -159,6 +198,9 @@ class SymmetricJwtTokenService(JwtTokenService):
     def decode(self, token: str):
         return jwt.decode(token, self.secret, algorithms=self.algorithm)
 
+    def get_unverified_claims(self, token: str):
+        return jwt.get_unverified_claims(token)
+
 
 class AsymmetricJwtTokenService(JwtTokenService):
     def __init__(self, issuer: str, private_key: str, public_key: str):
@@ -192,3 +234,6 @@ class AsymmetricJwtTokenService(JwtTokenService):
 
     def decode(self, token: str):
         return jwt.decode(token, self.public_key, algorithms=self.algorithm)
+
+    def get_unverified_claims(self, token: str):
+        return jwt.get_unverified_claims(token)
