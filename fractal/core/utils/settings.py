@@ -1,5 +1,6 @@
 import os
 from io import StringIO
+from typing import List, Tuple
 
 from dotenv import load_dotenv
 
@@ -27,3 +28,13 @@ class Settings(object):
         load_dotenv(stream=filelike, override=True)
         self.load()
         Settings.instance = self
+
+    def get_parameters(self, parameters: List[str]) -> Tuple:
+        for parameter in parameters:
+            if not hasattr(self, parameter):
+                from fractal import FractalException
+
+                raise FractalException(
+                    f"ApplicationContext does not provide '{parameter}'"
+                )
+        return tuple(getattr(self, p) for p in parameters)

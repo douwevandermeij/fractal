@@ -115,10 +115,6 @@ class ApplicationContext(object):
             from fractal.contrib.tokens.services import SymmetricJwtTokenService
 
             self.install_service(SymmetricJwtTokenService, name="token_service")
-            self.token_service = SymmetricJwtTokenService(
-                issuer=self.settings.APP_NAME,
-                secret=self.settings.SECRET_KEY,
-            )
         else:
             from fractal.contrib.tokens.services import StaticTokenService
 
