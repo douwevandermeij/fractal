@@ -2,6 +2,7 @@ import importlib
 import logging
 import os
 import pathlib
+from types import FunctionType
 from typing import List, Tuple
 
 
@@ -103,7 +104,12 @@ class ApplicationContext(object):
     def load_internal_services(self):
         """Load services for internal use of the domain."""
         for name, service in self.registered_internal_services:
-            self.install_service(service, name=name)
+            self.install_service(
+                service(self.settings)
+                if isinstance(service, FunctionType)
+                else service,
+                name=name,
+            )
 
         if hasattr(self.settings, "SECRET_KEY") and self.settings.SECRET_KEY:
             from fractal.contrib.tokens.services import SymmetricJwtTokenService
@@ -120,8 +126,17 @@ class ApplicationContext(object):
 
     def load_repositories(self):
         """Load repositories for data access"""
-        for name, repo in self.registered_repositories:
-            setattr(self, name, self.install_repository(repo(self.settings), name=name))
+        for name, repository in self.registered_repositories:
+            setattr(
+                self,
+                name,
+                self.install_repository(
+                    repository(self.settings)
+                    if isinstance(repository, FunctionType)
+                    else repository,
+                    name=name,
+                ),
+            )
 
         if (
             hasattr(self.settings, "EVENT_STORE_BACKEND")
@@ -173,7 +188,12 @@ class ApplicationContext(object):
     def load_egress_services(self):
         """Load services to external interfaces that are initiated by this service (outbound)"""
         for name, service in self.registered_egress_services:
-            self.install_service(service, name=name)
+            self.install_service(
+                service(self.settings)
+                if isinstance(service, FunctionType)
+                else service,
+                name=name,
+            )
 
     def load_event_projectors(self):
         from fractal.core.event_sourcing.event import EventCommandMapper
@@ -211,7 +231,12 @@ class ApplicationContext(object):
     def load_ingress_services(self):
         """Load services to external interfaces that are initiated by the external services (inbound)"""
         for name, service in self.registered_ingress_services:
-            self.install_service(service, name=name)
+            self.install_service(
+                service(self.settings)
+                if isinstance(service, FunctionType)
+                else service,
+                name=name,
+            )
 
     def install_repository(self, repository, *, name=""):
         if not name:
