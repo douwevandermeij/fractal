@@ -24,18 +24,18 @@ class PubSubEventBusProjector(EventProjector):
         self,
         project_id: str,
         json_encoder: Optional[Type[JSONEncoder]] = EnhancedEncoder,
+        topic: str = "",
     ):
         self.project_id = project_id
         self.publisher = pubsub_v1.PublisherClient()
         self.project_path = f"projects/{project_id}"
         self.json_encoder = json_encoder
+        self.topic = topic
 
     def project(self, id: str, event: BasicSendingEvent):
         # The `topic_path` method creates a fully qualified identifier
         # in the form `projects/{project_id}/topics/{topic_id}`
-        topic_path = self.publisher.topic_path(
-            self.project_id, f"{event.aggregate_root_type.__name__.lower()}-events"
-        )
+        topic_path = self._topic_path(event)
 
         # Check if topic exists
         if topic_path not in [
@@ -60,3 +60,10 @@ class PubSubEventBusProjector(EventProjector):
         # When you publish a message, the client returns a future.
         future = self.publisher.publish(topic_path, data=data)
         logger.debug(f"{data} sent to Google PubSub - message nr: {future.result()}")
+
+    def _topic_path(self, event):
+        if self.topic:
+            topic_path = f"{self.topic.lower()}-events"
+        else:
+            topic_path = f"{event.aggregate_root_type.__name__.lower()}-events"
+        return self.publisher.topic_path(self.project_id, topic_path)

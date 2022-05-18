@@ -26,7 +26,7 @@ class Model:
             if isinstance(v, Model):
                 return v.asdict()
             elif isinstance(v, list):
-                return [i.asdict() for i in v]
+                return [i.asdict() if hasattr(i, "asdict") else i.__dict__ for i in v]
             return v
 
         ret = {k: _asdict(v) for k, v in self.__dict__.items() if k in field_names}

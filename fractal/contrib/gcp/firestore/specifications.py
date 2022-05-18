@@ -3,6 +3,7 @@ from typing import Collection, Optional
 from fractal.core.exceptions import DomainException
 from fractal.core.specifications.generic.collections import AndSpecification
 from fractal.core.specifications.generic.operators import (
+    ContainsSpecification,
     EqualsSpecification,
     GreaterThanEqualSpecification,
     GreaterThanSpecification,
@@ -28,6 +29,8 @@ class FirestoreSpecificationBuilder:
                 FirestoreSpecificationBuilder.build(spec)
                 for spec in specification.to_collection()
             ]
+        elif isinstance(specification, ContainsSpecification):
+            return specification.field, "array-contains", specification.value
         elif isinstance(specification, InSpecification):
             return specification.field, "in", specification.value
         elif isinstance(specification, EqualsSpecification):

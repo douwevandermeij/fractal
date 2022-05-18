@@ -198,23 +198,39 @@ class ApplicationContext(object):
         )
         from fractal.core.utils.subclasses import all_subclasses
 
+        projectors = []
+
         self.command_bus_projector = CommandBusProjector(
             lambda: self.command_bus,
             all_subclasses(EventCommandMapper),
         )
+        projectors.append(self.command_bus_projector)
 
-        from fractal.core.event_sourcing.projectors.event_store_projector import (
-            EventStoreProjector,
-        )
-        from fractal.core.event_sourcing.projectors.print_projector import (
-            PrintEventProjector,
-        )
+        if getattr(self.settings, "EVENT_STORE_PROJECTOR", None):
+            from fractal.core.event_sourcing.projectors.event_store_projector import (
+                EventStoreProjector,
+            )
 
-        return [
-            self.command_bus_projector,
-            EventStoreProjector(self.event_store),
-            PrintEventProjector(),
-        ]
+            projectors.append(EventStoreProjector(self.event_store))
+
+        if getattr(self.settings, "PRINT_PROJECTOR", None):
+            from fractal.core.event_sourcing.projectors.print_projector import (
+                PrintEventProjector,
+            )
+
+            projectors.append(PrintEventProjector())
+
+        if gcp_project_id := getattr(self.settings, "GCP_PROJECT_ID", None):
+            from fractal.contrib.gcp.pubsub.projectors import PubSubEventBusProjector
+
+            projectors.append(
+                PubSubEventBusProjector(
+                    project_id=gcp_project_id,
+                    topic=getattr(self.settings, "GCP_PUBSUB_TOPIC", ""),
+                ),
+            )
+
+        return projectors
 
     def load_command_bus(self):
         from fractal.core.command_bus.command_bus import CommandBus

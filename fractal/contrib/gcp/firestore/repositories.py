@@ -3,11 +3,14 @@ from datetime import date
 from decimal import Decimal
 from typing import Iterator, Optional
 
+from google.cloud import firestore
 from google.cloud.firestore_v1 import Client
 
 from fractal import Settings
 from fractal.contrib.gcp.firestore.specifications import FirestoreSpecificationBuilder
+from fractal.core.exceptions import ObjectNotFoundException
 from fractal.core.repositories import Entity, Repository
+from fractal.core.repositories.sort_repository_mixin import SortRepositoryMixin
 from fractal.core.specifications.generic.specification import Specification
 
 
@@ -80,7 +83,10 @@ class FirestoreRepositoryMixin(Repository[Entity]):
             lambda i: specification.is_satisfied_by(AttrDict(i.to_dict())),
             collection.stream(),
         ):
-            return self.entity(**doc.to_dict())
+            return self.entity.from_dict(doc.to_dict())
+        if self.object_not_found_exception:
+            raise self.object_not_found_exception
+        raise ObjectNotFoundException(f"{self.entity.__name__} not found!")
 
     def find(self, specification: Specification = None) -> Iterator[Entity]:
         _filter = FirestoreSpecificationBuilder.build(specification)
@@ -92,7 +98,7 @@ class FirestoreRepositoryMixin(Repository[Entity]):
             else:
                 collection = collection.where(*_filter)
         for doc in collection.stream():
-            yield self.entity(**doc.to_dict())
+            yield self.entity.from_dict(doc.to_dict())
 
     def is_healthy(self) -> bool:
         return True
@@ -122,3 +128,30 @@ class FirestoreRepositoryDictMixin(FirestoreRepositoryMixin[Entity]):
                 doc_ref.set(asdict(entity, dict_factory=FirestoreDict))
             return entity
         return self.add(entity)
+
+
+class FirestoreSortRepositoryMixin(SortRepositoryMixin[Entity]):
+    def find_sort(
+        self, specification: Specification = None, *, order_by: str = "", limit: int = 0
+    ) -> Iterator[Entity]:
+        _filter = FirestoreSpecificationBuilder.build(specification)
+        collection = self.collection
+        if _filter:
+            if isinstance(_filter, list):
+                for f in _filter:
+                    collection = collection.where(*f)
+            else:
+                collection = collection.where(*_filter)
+        if order_by:
+            if reverse := order_by.startswith("-"):
+                order_by = order_by[1:]
+            collection = collection.order_by(
+                order_by,
+                direction=firestore.Query.DESCENDING
+                if reverse
+                else firestore.Query.ASCENDING,
+            )
+        if limit:
+            collection = collection.limit(limit)
+        for doc in collection.stream():
+            yield self.entity.from_dict(doc.to_dict())

@@ -1,7 +1,5 @@
 """Fractal is a scaffolding toolkit for building SOLID logic for your Python applications."""
 
-__version__ = "0.4.3"
-
 from abc import ABC
 
 from fractal.core.utils.application_context import ApplicationContext
