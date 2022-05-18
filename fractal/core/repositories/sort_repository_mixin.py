@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Generic, Iterator
 
-from fractal.core.repositories import Entity, Repository
+from fractal.core.repositories import Entity
 from fractal.core.specifications.generic.specification import Specification
 
 
