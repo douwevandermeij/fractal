@@ -104,6 +104,70 @@ class DefaultRestRouterService(Service, ABC):
         raise NotImplementedError
 
 
+class Contract(BaseModel, ABC):
+    @abstractmethod
+    def to_entity(self, **kwargs):
+        raise NotImplementedError
+
+
+class BasicRestRouterService(DefaultRestRouterService):
+    def add_entity(
+        self,
+        contract: Contract,
+        **kwargs,
+    ):
+        try:
+            UUID(contract.id)
+        except (ValueError, TypeError):
+            contract.id = None
+        _entity = contract.to_entity(
+            user_id=kwargs.get("sub"), account_id=kwargs.get("account")
+        )
+        return self.ingress_service.add(_entity, str(kwargs.get("sub")))
+
+    def find_entities(
+        self,
+        q: str = "",
+        **kwargs,
+    ):
+        return self.ingress_service.find(str(kwargs.get("account")), q)
+
+    def get_entity(
+        self,
+        entity_id: UUID,
+        **kwargs,
+    ):
+        return self.ingress_service.get(str(entity_id), str(kwargs.get("account")))
+
+    def update_entity(
+        self,
+        entity_id: UUID,
+        contract: Contract,
+        **kwargs,
+    ):
+        if _entity := self.get_entity(entity_id, **kwargs):
+            _entity = _entity.update(contract.dict())
+        else:
+            _entity = contract.to_entity(
+                id=entity_id,
+                user_id=kwargs.get("sub"),
+                account_id=kwargs.get("account"),
+            )
+        return self.ingress_service.update(
+            str(entity_id), _entity, str(kwargs.get("sub"))
+        )
+
+    def delete_entity(
+        self,
+        entity_id: UUID,
+        **kwargs,
+    ) -> Dict:
+        self.ingress_service.delete(
+            str(entity_id), str(kwargs.get("sub")), str(kwargs.get("account"))
+        )
+        return {}
+
+
 def inject_default_rest_routes(
     fractal: Fractal,
     *,
