@@ -112,9 +112,9 @@ class ApplicationContext(object):
             )
 
         if hasattr(self.settings, "SECRET_KEY") and self.settings.SECRET_KEY:
-            from fractal.contrib.tokens.services import SymmetricJwtTokenService
+            from fractal.contrib.tokens.services import AutomaticJwtTokenService
 
-            self.install_service(SymmetricJwtTokenService, name="token_service")
+            self.install_service(AutomaticJwtTokenService, name="token_service")
         else:
             from fractal.contrib.tokens.services import StaticTokenService
 
