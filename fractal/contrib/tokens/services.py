@@ -4,10 +4,15 @@ from abc import ABC, abstractmethod
 from calendar import timegm
 from datetime import datetime
 from typing import Dict
+from urllib.request import urlopen
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from jose import ExpiredSignatureError, JWTError, jwt
 
 from fractal.contrib.tokens.exceptions import (
+    NotAllowedException,
     TokenExpiredException,
     TokenInvalidException,
 )
@@ -234,6 +239,85 @@ class AsymmetricJwtTokenService(JwtTokenService):
 
     def decode(self, token: str):
         return jwt.decode(token, self.public_key, algorithms=self.algorithm)
+
+    def get_unverified_claims(self, token: str):
+        return jwt.get_unverified_claims(token)
+
+
+class ExtendedAsymmetricJwtTokenService(AsymmetricJwtTokenService):
+    def __init__(
+        self, issuer: str, private_key: str, public_key: RSAPublicKey, kid: str
+    ):
+        super(ExtendedAsymmetricJwtTokenService, self).__init__(issuer, private_key, "")
+        self.public_key = public_key
+        self.kid = kid
+
+    def decode(self, token: str):
+        return jwt.decode(
+            token, self.public_key, algorithms=self.algorithm, issuer=self.issuer
+        )
+
+    def generate(
+        self,
+        payload: Dict,
+        token_type: str = "access",
+        seconds_valid: int = ACCESS_TOKEN_EXPIRATION_SECONDS,
+    ) -> str:
+        return jwt.encode(
+            self._prepare(payload, token_type, seconds_valid, self.issuer),
+            self.private_key,
+            algorithm=self.algorithm,
+            headers={"kid": self.kid},
+        )
+
+
+class AutomaticJwtTokenService(JwtTokenService):
+    def __init__(self, issuer: str, secret: str):
+        self.issuer = issuer
+        self.symmetric_token_service = SymmetricJwtTokenService(
+            issuer=issuer,
+            secret=secret,
+        )
+
+    @classmethod
+    def install(cls, context: ApplicationContext):
+        yield cls(
+            context.settings.ACCOUNT_SERVICE_HOST,
+            context.settings.SECRET_KEY,
+        )
+
+    def generate(
+        self,
+        payload: Dict,
+        token_type: str = "access",
+        seconds_valid: int = ACCESS_TOKEN_EXPIRATION_SECONDS,
+    ) -> str:
+        return self.symmetric_token_service.generate(payload, token_type, seconds_valid)
+
+    def verify(self, token: str, *, typ: str):
+        headers = jwt.get_unverified_headers(token)
+        claims = jwt.get_unverified_claims(token)
+        if headers["alg"] == "HS256":
+            return self.symmetric_token_service.verify(token, typ=typ)
+        if headers["alg"] == "RS256":
+            jsonurl = urlopen(f"{claims['iss']}/public/keys")
+            jwks = json.loads(jsonurl.read())
+            for key in jwks:
+                if key["id"] == headers["kid"]:
+                    public_key = serialization.load_pem_public_key(
+                        key["public_key"].encode("utf-8"), backend=default_backend()
+                    )
+                    asymmetric_token_service = ExtendedAsymmetricJwtTokenService(
+                        issuer=self.issuer,
+                        private_key="",
+                        public_key=public_key,
+                        kid=key["id"],
+                    )
+                    return asymmetric_token_service.verify(token, typ=typ)
+        raise NotAllowedException("No permission!")
+
+    def decode(self, token: str):
+        ...
 
     def get_unverified_claims(self, token: str):
         return jwt.get_unverified_claims(token)
