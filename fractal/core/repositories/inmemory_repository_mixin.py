@@ -1,12 +1,15 @@
+import uuid
 from typing import Dict, Iterator, Optional
 
 from fractal.core.exceptions import ObjectNotFoundException
-from fractal.core.repositories import Entity, Repository
+from fractal.core.repositories import Entity, FileRepository, Repository
 from fractal.core.specifications.generic.specification import Specification
 
 
 class InMemoryRepositoryMixin(Repository[Entity]):
     def __init__(self):
+        super(InMemoryRepositoryMixin, self).__init__()
+
         self.entities: Dict[str, Entity] = {}
 
     def add(self, entity: Entity) -> Entity:
@@ -42,3 +45,25 @@ class InMemoryRepositoryMixin(Repository[Entity]):
 
     def is_healthy(self) -> bool:
         return True
+
+
+class InMemoryFileRepositoryMixin(FileRepository[Entity]):
+    def __init__(self):
+        super(InMemoryFileRepositoryMixin, self).__init__()
+
+        self.files: Dict[str, bytes] = {}
+
+    def upload_file(self, data: bytes, content_type: str, reference: str = "") -> str:
+        if not reference:
+            reference = str(uuid.uuid4())
+        self.files[reference] = data
+        return reference
+
+    def get_file(self, reference: str) -> bytes:
+        return self.files.get(reference, "")
+
+    def delete_file(self, reference: str) -> bool:
+        if reference in self.files:
+            del self.files[reference]
+            return True
+        return False

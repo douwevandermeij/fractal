@@ -34,3 +34,17 @@ class Repository(Generic[Entity], ABC):
     @abstractmethod
     def is_healthy(self) -> bool:
         raise NotImplementedError
+
+
+class FileRepository(Generic[Entity], ABC):
+    @abstractmethod
+    def upload_file(self, data: bytes, content_type: str, reference: str = "") -> str:
+        ...
+
+    @abstractmethod
+    def get_file(self, reference: str) -> str:
+        ...
+
+    @abstractmethod
+    def delete_file(self, reference: str) -> bool:
+        ...

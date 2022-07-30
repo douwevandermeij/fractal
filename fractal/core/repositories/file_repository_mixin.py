@@ -1,19 +1,27 @@
 import json
 import os
+import uuid
 from typing import Iterator, Optional
 
 from fractal.core.exceptions import ObjectNotFoundException
-from fractal.core.repositories import Entity, Repository
+from fractal.core.repositories import Entity, FileRepository, Repository
 from fractal.core.specifications.generic.operators import NotSpecification
 from fractal.core.specifications.generic.specification import Specification
 from fractal.core.specifications.id_specification import IdSpecification
 from fractal.core.utils.json_encoder import EnhancedEncoder
 
 
-class FileRepositoryMixin(Repository[Entity]):
+class RootDirMixin(object):
+    def __init__(self, root_dir: str, *args, **kwargs):
+        super(RootDirMixin, self).__init__(*args, **kwargs)
+
+        self.root_dir = root_dir
+
+
+class FileRepositoryMixin(RootDirMixin, Repository[Entity]):
     @property
     def _filename(self) -> str:
-        return os.path.join(self.root_dir, f"{self.__class__.__name__}.txt")
+        return os.path.join(self.root_dir, "db", f"{self.__class__.__name__}.txt")
 
     @property
     def _entities(self):
@@ -22,9 +30,6 @@ class FileRepositoryMixin(Repository[Entity]):
         with open(self._filename, "r") as fp:
             for line in fp.readlines():
                 yield self.entity(**json.loads(line))
-
-    def __init__(self, root_dir: str):
-        self.root_dir = root_dir
 
     def add(self, entity: Entity) -> Entity:
         with open(self._filename, "a") as fp:
@@ -68,3 +73,23 @@ class FileRepositoryMixin(Repository[Entity]):
 
     def is_healthy(self) -> bool:
         return True
+
+
+class FileFileRepositoryMixin(RootDirMixin, FileRepository):
+    def upload_file(self, data: bytes, content_type: str, reference: str = "") -> str:
+        if not reference:
+            reference = str(uuid.uuid4())
+        with open(os.path.join(self.root_dir, "media", reference), "wb") as fp:
+            fp.write(data)
+        return reference
+
+    def get_file(self, reference: str) -> bytes:
+        with open(os.path.join(self.root_dir, "media", reference), "rb") as fp:
+            return fp.read()
+
+    def delete_file(self, reference: str) -> bool:
+        try:
+            os.remove(os.path.join(self.root_dir, "media", reference))
+            return True
+        except Exception:
+            return False

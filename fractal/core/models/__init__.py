@@ -20,7 +20,9 @@ class Model:
         return self.from_dict(current)
 
     def asdict(self):
-        field_names = set(f.name for f in fields(self))
+        field_names = set(
+            f.name for f in fields(self) if f.name not in self.calculated_fields()
+        )
 
         def _asdict(v):
             if isinstance(v, Model):
@@ -31,6 +33,10 @@ class Model:
 
         ret = {k: _asdict(v) for k, v in self.__dict__.items() if k in field_names}
         return ret
+
+    @staticmethod
+    def calculated_fields():
+        return []
 
 
 @dataclass
