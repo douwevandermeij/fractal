@@ -43,8 +43,8 @@ def install_fastapi(settings: Settings):
             sentry_sdk.init(
                 dsn=sentry_dsn,
                 integrations=[
-                    StarletteIntegration(),
-                    FastApiIntegration(),
+                    # StarletteIntegration(),
+                    # FastApiIntegration(),
                 ],
             )
 
