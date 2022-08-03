@@ -9,7 +9,7 @@ from fractal.core.repositories import Entity, Repository
 
 def get_cloudstorage_client(settings: Settings):
     if not hasattr(settings, "cloudstorage_client"):
-        settings.cloudstorage_client = storage.client()
+        settings.cloudstorage_client = storage.Client()
     return settings.cloudstorage_client
 
 
