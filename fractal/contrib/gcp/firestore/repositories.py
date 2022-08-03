@@ -7,6 +7,7 @@ from google.cloud import firestore
 from google.cloud.firestore_v1 import Client
 
 from fractal import Settings
+from fractal.contrib.gcp import SettingsMixin
 from fractal.contrib.gcp.firestore.specifications import FirestoreSpecificationBuilder
 from fractal.core.exceptions import ObjectNotFoundException
 from fractal.core.repositories import Entity, Repository
@@ -36,16 +37,18 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
-class FirestoreRepositoryMixin(Repository[Entity]):
+class FirestoreRepositoryMixin(SettingsMixin, Repository[Entity]):
     """
     https://github.com/GoogleCloudPlatform/python-docs-samples/blob/46fa5a588858021ea32350584a4ee178cd7c1f33/firestore/cloud-client/snippets.py#L62-L66
     """
 
     entity = Entity
 
-    def __init__(self, settings: Settings):
-        client: Client = get_firestore_client(settings)
-        if app_name := getattr(settings, "APP_NAME"):
+    def __init__(self, *args, **kwargs):
+        super(FirestoreRepositoryMixin, self).__init__(*args, **kwargs)
+
+        client: Client = get_firestore_client(self.settings)
+        if app_name := getattr(self.settings, "APP_NAME"):
             self.collection = client.collection(
                 f"{app_name.lower()}-{self.entity.__name__.lower()}"
             )

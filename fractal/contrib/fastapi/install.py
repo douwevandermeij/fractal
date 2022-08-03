@@ -2,6 +2,8 @@ import logging
 
 try:
     import sentry_sdk
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
 except ImportError:
     sentry = False
 else:
@@ -37,7 +39,13 @@ def install_fastapi(settings: Settings):
     )
 
     if sentry:
-        sentry_sdk.init(dsn=getattr(settings, "SENTRY_DSN", ""))
+        sentry_sdk.init(
+            dsn=getattr(settings, "SENTRY_DSN", ""),
+            integrations=[
+                StarletteIntegration(),
+                FastApiIntegration(),
+            ],
+        )
 
     @app.exception_handler(DomainException)
     def unicorn_domain_exception_handler(request: Request, exc: DomainException):

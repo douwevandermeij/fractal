@@ -3,6 +3,7 @@ import uuid
 from google.cloud import storage
 
 from fractal import Settings
+from fractal.contrib.gcp import SettingsMixin
 from fractal.core.repositories import Entity, Repository
 
 
@@ -12,16 +13,18 @@ def get_cloudstorage_client(settings: Settings):
     return settings.cloudstorage_client
 
 
-class CloudStorageRepositoryMixin(Repository[Entity]):
+class CloudStorageRepositoryMixin(SettingsMixin, Repository[Entity]):
     """
     https://github.com/googleapis/python-storage/tree/main/samples/snippets
     """
 
     entity = Entity
 
-    def __init__(self, settings: Settings):
-        client = get_cloudstorage_client(settings)
-        if app_name := getattr(settings, "APP_NAME"):
+    def __init__(self, *args, **kwargs):
+        super(CloudStorageRepositoryMixin, self).__init__(*args, **kwargs)
+
+        client = get_cloudstorage_client(self.settings)
+        if app_name := getattr(self.settings, "APP_NAME"):
             self.bucket = client.bucket(
                 f"{app_name.lower()}-{self.entity.__name__.lower()}"
             )
