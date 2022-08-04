@@ -1,4 +1,6 @@
 from dataclasses import asdict, dataclass, fields
+from datetime import date
+from decimal import Decimal
 from enum import Enum
 from typing import Dict
 
@@ -29,6 +31,10 @@ class Model:
                 return v.asdict()
             elif isinstance(v, list):
                 return [_asdict(i) for i in v]
+            elif isinstance(v, Decimal):
+                return f"{v:.2f}"
+            elif isinstance(v, date):
+                return v.isoformat()
             return v
 
         ret = {k: _asdict(v) for k, v in self.__dict__.items() if k in field_names}
