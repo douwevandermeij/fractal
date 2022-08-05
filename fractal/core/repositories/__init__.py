@@ -42,7 +42,7 @@ class FileRepository(Generic[Entity], ABC):
         ...
 
     @abstractmethod
-    def get_file(self, reference: str) -> str:
+    def get_file(self, reference: str) -> bytes:
         ...
 
     @abstractmethod

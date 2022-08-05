@@ -32,6 +32,8 @@ class FirestoreSpecificationBuilder:
         elif isinstance(specification, ContainsSpecification):
             return specification.field, "array-contains", specification.value
         elif isinstance(specification, InSpecification):
+            if not specification.value:
+                return None
             return specification.field, "in", specification.value
         elif isinstance(specification, EqualsSpecification):
             return specification.field, "==", specification.value
