@@ -12,7 +12,7 @@ class Admin(Role):
         return Methods()
 
 
-class RolesService(BaseRolesService):
+class DummyRolesService(BaseRolesService):
     def __init__(self):
         self.roles = [Admin()]
 
@@ -21,6 +21,9 @@ class DummyTokenRolesFractal(Fractal):
     def __init__(self, context: ApplicationContext, settings: Optional[Settings]):
         self.context = context
         self.token_service = getattr(context, "token_service")
-        self.roles_service = context.install_service(RolesService, name="roles_service")
+        if roles_service := getattr(context, "roles_service", None):
+            self.roles_service = roles_service
+        else:
+            context.install_service(DummyRolesService, name="roles_service")
         self.settings = settings
         super(DummyTokenRolesFractal, self).__init__()

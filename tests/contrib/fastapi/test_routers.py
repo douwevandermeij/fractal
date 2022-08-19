@@ -15,7 +15,6 @@ def test_default_routes_info(fastapi_client, token):
     response = fastapi_client.get(Routes.INFO, headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     assert {(i["adapter"], i["status_ok"]) for i in json.loads(response.content)} == {
-        ("RolesService", True),
         ("InMemoryRepository", True),
         ("FakeService", True),
         ("DummyJsonTokenService", True),
@@ -35,7 +34,6 @@ def test_default_routes_info_error(failing_service_fastapi_client, token):
     response = failing_service_fastapi_client.get(Routes.INFO, headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     assert {(i["adapter"], i["status_ok"]) for i in json.loads(response.content)} == {
-        ("RolesService", True),
         ("InMemoryRepository", True),
         ("FakeService", True),
         ("DummyJsonTokenService", True),
