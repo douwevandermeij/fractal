@@ -9,7 +9,7 @@ from fractal import Fractal
 from fractal.contrib.fastapi.routers import Routes
 from fractal.contrib.fastapi.routers.domain.models import AdapterInfo, Info
 from fractal.contrib.fastapi.routers.tokens import get_payload, get_payload_roles
-from fractal.contrib.tokens.fractal import DummyTokenServiceFractal
+from fractal.contrib.tokens.fractal import DummyTokenRolesFractal
 from fractal.contrib.tokens.models import TokenPayload, TokenPayloadRoles
 from fractal.core.models import Model
 from fractal.core.services import Service
@@ -33,7 +33,7 @@ def inject_default_routes(
     @router.get(Routes.INFO, responses={200: {"model": Info}})
     def info(
         payload: TokenPayload = Depends(
-            get_payload(DummyTokenServiceFractal(context, settings))
+            get_payload(DummyTokenRolesFractal(context, settings))
         ),
     ):
         adapters = list(context.adapters())
@@ -59,6 +59,8 @@ class DefaultRestRouterService(Service, ABC):
     domain_entity_class: Type[Model]
     entities_route: str
     entity_route: str
+    entities_endpoint: str
+    entity_endpoint: str
     entity_contract: Type[BaseModel]
     create_entity_contract: Type[BaseModel]
 
@@ -172,11 +174,7 @@ def inject_default_rest_routes(
     fractal: Fractal,
     *,
     router_service_class: Type[DefaultRestRouterService],
-    roles: Dict[str, List[str]] = None,
 ):
-    if roles is None:
-        roles = {}
-
     router = APIRouter()
 
     @router.post(
@@ -188,7 +186,11 @@ def inject_default_rest_routes(
     def add_entity(
         entity: router_service_class().create_entity_contract,
         payload: TokenPayloadRoles = Depends(
-            get_payload_roles(fractal, roles=roles.get("add", ["user"]))
+            get_payload_roles(
+                fractal,
+                endpoint=router_service_class().entities_endpoint,
+                method="post",
+            )
         ),
     ):
         return router_service_class().add_entity(
@@ -205,7 +207,11 @@ def inject_default_rest_routes(
     def find_entities(
         q: Optional[str] = "",
         payload: TokenPayloadRoles = Depends(
-            get_payload_roles(fractal, roles=roles.get("get", ["user"]))
+            get_payload_roles(
+                fractal,
+                endpoint=router_service_class().entities_endpoint,
+                method="get",
+            )
         ),
     ):
         return router_service_class().find_entities(
@@ -222,7 +228,11 @@ def inject_default_rest_routes(
     def get_entity(
         entity_id: UUID,
         payload: TokenPayloadRoles = Depends(
-            get_payload_roles(fractal, roles=roles.get("get", ["user"]))
+            get_payload_roles(
+                fractal,
+                endpoint=router_service_class().entities_endpoint,
+                method="get",
+            )
         ),
     ):
         return router_service_class().get_entity(
@@ -240,7 +250,11 @@ def inject_default_rest_routes(
         entity_id: UUID,
         entity: router_service_class().entity_contract,
         payload: TokenPayloadRoles = Depends(
-            get_payload_roles(fractal, roles=roles.get("update", ["user"]))
+            get_payload_roles(
+                fractal,
+                endpoint=router_service_class().entities_endpoint,
+                method="put",
+            )
         ),
     ):
         return router_service_class().update_entity(
@@ -258,7 +272,11 @@ def inject_default_rest_routes(
     def delete_entity(
         entity_id: UUID,
         payload: TokenPayloadRoles = Depends(
-            get_payload_roles(fractal, roles=roles.get("delete", ["user"]))
+            get_payload_roles(
+                fractal,
+                endpoint=router_service_class().entities_endpoint,
+                method="delete",
+            )
         ),
     ) -> Dict:
         return router_service_class().delete_entity(

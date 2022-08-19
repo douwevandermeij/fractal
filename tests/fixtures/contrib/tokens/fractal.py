@@ -9,6 +9,6 @@ def reset(dummy_token_service_fractal, settings):
 
 @pytest.fixture
 def dummy_token_service_fractal(token_service_application_context, settings):
-    from fractal.contrib.tokens.fractal import DummyTokenServiceFractal
+    from fractal.contrib.tokens.fractal import DummyTokenRolesFractal
 
-    return DummyTokenServiceFractal(token_service_application_context, settings)
+    return DummyTokenRolesFractal(token_service_application_context, settings)
