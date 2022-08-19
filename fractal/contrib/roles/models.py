@@ -6,6 +6,9 @@ from fractal.core.specifications.generic.specification import Specification
 
 
 class Role:
+    def __getattr__(self, item):
+        return Methods()
+
     @staticmethod
     def filter_account(**kwargs) -> Specification:
         return AccountIdSpecification(str(kwargs.get("account")))

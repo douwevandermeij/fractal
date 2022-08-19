@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic.main import BaseModel
 
+from fractal.core.specifications.generic.specification import Specification
+
 
 class TokenPayload(BaseModel):
     iss: Optional[str]
@@ -15,3 +17,8 @@ class TokenPayload(BaseModel):
 class TokenPayloadRoles(TokenPayload):
     roles: Optional[list]
     specification_func: Callable = lambda **kwargs: None
+
+    @property
+    def specification(self) -> Optional[Specification]:
+        if self.specification_func:
+            return self.specification_func(**self.dict())

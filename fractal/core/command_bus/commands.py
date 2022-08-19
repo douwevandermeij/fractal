@@ -9,12 +9,14 @@ from fractal.core.specifications.generic.specification import Specification
 @dataclass
 class AddEntityCommand(Generic[Entity], Command):
     entity: Entity
+    specification: Specification
 
 
 @dataclass
 class UpdateEntityCommand(Generic[Entity], Command):
     id: str
     entity: Entity
+    specification: Specification
 
 
 @dataclass

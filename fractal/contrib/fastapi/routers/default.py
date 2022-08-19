@@ -13,6 +13,7 @@ from fractal.contrib.tokens.fractal import DummyTokenRolesFractal
 from fractal.contrib.tokens.models import TokenPayload, TokenPayloadRoles
 from fractal.core.models import Model
 from fractal.core.services import Service
+from fractal.core.specifications.generic.specification import Specification
 from fractal.core.utils.application_context import ApplicationContext
 from fractal.core.utils.settings import Settings
 
@@ -116,6 +117,8 @@ class BasicRestRouterService(DefaultRestRouterService):
     def add_entity(
         self,
         contract: Contract,
+        *,
+        specification: Specification = None,
         **kwargs,
     ):
         try:
@@ -125,29 +128,35 @@ class BasicRestRouterService(DefaultRestRouterService):
         _entity = contract.to_entity(
             user_id=kwargs.get("sub"), account_id=kwargs.get("account")
         )
-        return self.ingress_service.add(_entity, str(kwargs.get("sub")))
+        return self.ingress_service.add(_entity, str(kwargs.get("sub")), specification=specification)
 
     def find_entities(
         self,
         q: str = "",
+        *,
+        specification: Specification = None,
         **kwargs,
     ):
-        return self.ingress_service.find(str(kwargs.get("account")), q)
+        return self.ingress_service.find(str(kwargs.get("account")), q, specification=specification)
 
     def get_entity(
         self,
         entity_id: UUID,
+        *,
+        specification: Specification = None,
         **kwargs,
     ):
-        return self.ingress_service.get(str(entity_id), str(kwargs.get("account")))
+        return self.ingress_service.get(str(entity_id), str(kwargs.get("account")), specification=specification)
 
     def update_entity(
         self,
         entity_id: UUID,
         contract: Contract,
+        *,
+        specification: Specification = None,
         **kwargs,
     ):
-        if _entity := self.get_entity(entity_id, **kwargs):
+        if _entity := self.get_entity(entity_id, specification=specification, **kwargs):
             _entity = _entity.update(contract.dict())
         else:
             _entity = contract.to_entity(
@@ -156,16 +165,18 @@ class BasicRestRouterService(DefaultRestRouterService):
                 account_id=kwargs.get("account"),
             )
         return self.ingress_service.update(
-            str(entity_id), _entity, str(kwargs.get("sub"))
+            str(entity_id), _entity, str(kwargs.get("sub")), specification=specification
         )
 
     def delete_entity(
         self,
         entity_id: UUID,
+        *,
+        specification: Specification = None,
         **kwargs,
     ) -> Dict:
         self.ingress_service.delete(
-            str(entity_id), str(kwargs.get("sub")), str(kwargs.get("account"))
+            str(entity_id), str(kwargs.get("sub")), str(kwargs.get("account")), specification=specification
         )
         return {}
 
@@ -195,6 +206,7 @@ def inject_default_rest_routes(
     ):
         return router_service_class().add_entity(
             contract=entity,
+            specification=payload.specification,
             **payload.dict(),
         )
 
@@ -216,6 +228,7 @@ def inject_default_rest_routes(
     ):
         return router_service_class().find_entities(
             q=q,
+            specification=payload.specification,
             **payload.dict(),
         )
 
@@ -237,6 +250,7 @@ def inject_default_rest_routes(
     ):
         return router_service_class().get_entity(
             entity_id=entity_id,
+            specification=payload.specification,
             **payload.dict(),
         )
 
@@ -260,6 +274,7 @@ def inject_default_rest_routes(
         return router_service_class().update_entity(
             entity_id=entity_id,
             contract=entity,
+            specification=payload.specification,
             **payload.dict(),
         )
 
@@ -281,6 +296,7 @@ def inject_default_rest_routes(
     ) -> Dict:
         return router_service_class().delete_entity(
             entity_id=entity_id,
+            specification=payload.specification,
             **payload.dict(),
         )
 
