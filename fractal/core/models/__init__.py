@@ -29,9 +29,9 @@ class Model:
         def _asdict(v):
             if isinstance(v, Model):
                 return v.asdict()
-            elif isinstance(v, list) and date not in skip_types:
+            elif isinstance(v, list) and list not in skip_types:
                 return [_asdict(i) for i in v]
-            elif isinstance(v, Decimal) and date not in skip_types:
+            elif isinstance(v, Decimal) and Decimal not in skip_types:
                 return f"{v:.2f}"
             elif isinstance(v, date) and date not in skip_types:
                 return v.isoformat()

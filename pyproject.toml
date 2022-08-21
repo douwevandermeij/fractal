@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fractal-toolkit"
-version = "0.4.16"
+version = "0.4.17"
 description = "Fractal is a scaffolding toolkit for building SOLID logic for your Python applications."
 authors = ["Douwe van der Meij <douwe@karibu-online.nl>"]
 
