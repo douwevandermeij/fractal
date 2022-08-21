@@ -28,28 +28,22 @@ pip install fractal-toolkit
 
 ### From 0.x to 1.x
 
-Alter the FastAPI installation in `app/main.py` from:
+Include a new import in the `__new__` function of `ApplicationFractal`:
 ```python
-fractal = ApplicationFractal()
+    ...
+    root_dir = pathlib.Path(cls.settings.ROOT_DIR)
 
-app = install_fastapi(fractal.settings)
-```
-
-To:
-```python
-fractal = ApplicationFractal()
-
-from app.roles import RolesService
-
-fractal.context.install_service(RolesService, name="roles_service")
-
-app = install_fastapi(fractal.settings)
+    parts = next(root_dir.glob("app/roles.py")).parts[len(root_dir.parts):]
+    importlib.import_module(".".join(parts).replace(".py", ""))
+    ...
 ```
 
 Add `app/roles.py` containing:
 ```python
 from fractal.contrib.roles.models import Role
 from fractal.contrib.roles.services import BaseRolesService
+
+from ....context import ApplicationContext
 
 
 class Admin(Role):
@@ -60,6 +54,7 @@ class User(Role):
     ...
 
 
+@ApplicationContext.register_internal_service("roles_service")
 class RolesService(BaseRolesService):
     def __init__(self):
         self.roles = [Admin(), User()]
