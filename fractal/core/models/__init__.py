@@ -21,7 +21,7 @@ class Model:
         current.update(model)
         return self.from_dict(current)
 
-    def asdict(self):
+    def asdict(self, *, skip_types=None):
         field_names = set(
             f.name for f in fields(self) if f.name not in self.calculated_fields()
         )
@@ -29,11 +29,11 @@ class Model:
         def _asdict(v):
             if isinstance(v, Model):
                 return v.asdict()
-            elif isinstance(v, list):
+            elif isinstance(v, list) and date not in skip_types:
                 return [_asdict(i) for i in v]
-            elif isinstance(v, Decimal):
+            elif isinstance(v, Decimal) and date not in skip_types:
                 return f"{v:.2f}"
-            elif isinstance(v, date):
+            elif isinstance(v, date) and date not in skip_types:
                 return v.isoformat()
             return v
 
