@@ -22,13 +22,15 @@ class Model:
         return self.from_dict(current)
 
     def asdict(self, *, skip_types=None):
+        if skip_types is None:
+            skip_types = []
         field_names = set(
             f.name for f in fields(self) if f.name not in self.calculated_fields()
         )
 
         def _asdict(v):
             if isinstance(v, Model):
-                return v.asdict()
+                return v.asdict(skip_types=skip_types)
             elif isinstance(v, list) and list not in skip_types:
                 return [_asdict(i) for i in v]
             elif isinstance(v, Decimal) and Decimal not in skip_types:
