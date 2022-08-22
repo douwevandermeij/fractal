@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import pytest
 
@@ -56,3 +57,8 @@ def empty_application_context(settings_class):
         settings = settings_class()
 
     return EmptyApplicationContext()
+
+
+@pytest.fixture
+def now():
+    return datetime.utcnow()
