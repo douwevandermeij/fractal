@@ -37,6 +37,7 @@ class ApplicationContext(object):
     @classmethod
     def register_command_handler(cls, command_handler):
         cls.registered_command_handlers.append(command_handler)
+        return command_handler
 
     @classmethod
     def register_ingress_service(cls, name):
