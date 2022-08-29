@@ -61,11 +61,15 @@ class Specification(ABC):
     def And(self, specification: "Specification") -> "Specification":
         from fractal.core.specifications.generic.collections import AndSpecification
 
+        if isinstance(specification, AndSpecification):
+            return specification.And(self)
         return AndSpecification([self, specification])
 
     def Or(self, specification: "Specification") -> "Specification":
         from fractal.core.specifications.generic.collections import OrSpecification
 
+        if isinstance(specification, OrSpecification):
+            return specification.Or(self)
         return OrSpecification([self, specification])
 
     def __str__(self):
