@@ -1,6 +1,6 @@
 """Fractal is a scaffolding toolkit for building SOLID logic for your Python applications."""
 
-__version__ = "1.0.7"
+__version__ = "1.0.8"
 
 from abc import ABC
 
