@@ -28,17 +28,7 @@ pip install fractal-toolkit
 
 ### From 0.x to 1.x
 
-Include a new import in the `__new__` function of `ApplicationFractal`:
-```python
-    ...
-    root_dir = pathlib.Path(cls.settings.ROOT_DIR)
-
-    parts = next(root_dir.glob("app/roles.py")).parts[len(root_dir.parts):]
-    importlib.import_module(".".join(parts).replace(".py", ""))
-    ...
-```
-
-Add `app/roles.py` containing:
+Add `.../roles.py` in your main Fractal service folder, next to `context.py` and `settings.py`, containing:
 ```python
 from fractal.contrib.roles.models import Role
 from fractal.contrib.roles.services import BaseRolesService
