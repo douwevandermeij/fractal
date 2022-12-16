@@ -45,7 +45,11 @@ def admin_role_token(dummy_token_service_fractal, user, account):
 
 
 @pytest.fixture
-def token_service_application_context(fake_application_context_class, dummy_json_token_service_class):
+def token_service_application_context(
+    fake_application_context_class, dummy_json_token_service_class
+):
     application_context = fake_application_context_class()
-    application_context.install_service(dummy_json_token_service_class, name="token_service")
+    application_context.install_service(
+        dummy_json_token_service_class, name="token_service"
+    )
     return application_context

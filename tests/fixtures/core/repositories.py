@@ -33,12 +33,14 @@ def inmemory_repository():
 
 @pytest.fixture
 def inmemory_filter_repository():
+    from fractal.core.repositories.filter_repository_mixin import FilterRepositoryMixin
     from fractal.core.repositories.inmemory_repository_mixin import (
         InMemoryRepositoryMixin,
     )
-    from fractal.core.repositories.filter_repository_mixin import FilterRepositoryMixin
 
-    class InMemoryFilterRepository(InMemoryRepositoryMixin[AnObject], FilterRepositoryMixin[AnObject]):
+    class InMemoryFilterRepository(
+        InMemoryRepositoryMixin[AnObject], FilterRepositoryMixin[AnObject]
+    ):
         pass
 
     return InMemoryFilterRepository()

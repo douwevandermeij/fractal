@@ -12,7 +12,9 @@ def test_default_routes_root(fastapi_client, settings):
 def test_default_routes_info(fastapi_client, token):
     from fractal.contrib.fastapi.routers import Routes
 
-    response = fastapi_client.get(Routes.INFO, headers={"Authorization": f"Bearer {token}"})
+    response = fastapi_client.get(
+        Routes.INFO, headers={"Authorization": f"Bearer {token}"}
+    )
     assert response.status_code == 200
     assert {(i["adapter"], i["status_ok"]) for i in json.loads(response.content)} == {
         ("InMemoryRepository", True),
@@ -31,7 +33,9 @@ def test_default_routes_info_token_error(failing_service_fastapi_client):
 def test_default_routes_info_error(failing_service_fastapi_client, token):
     from fractal.contrib.fastapi.routers import Routes
 
-    response = failing_service_fastapi_client.get(Routes.INFO, headers={"Authorization": f"Bearer {token}"})
+    response = failing_service_fastapi_client.get(
+        Routes.INFO, headers={"Authorization": f"Bearer {token}"}
+    )
     assert response.status_code == 200
     assert {(i["adapter"], i["status_ok"]) for i in json.loads(response.content)} == {
         ("InMemoryRepository", True),

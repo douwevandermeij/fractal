@@ -128,7 +128,9 @@ class BasicRestRouterService(DefaultRestRouterService):
         _entity = contract.to_entity(
             user_id=kwargs.get("sub"), account_id=kwargs.get("account")
         )
-        return self.ingress_service.add(_entity, str(kwargs.get("sub")), specification=specification)
+        return self.ingress_service.add(
+            _entity, str(kwargs.get("sub")), specification=specification
+        )
 
     def find_entities(
         self,
@@ -137,7 +139,9 @@ class BasicRestRouterService(DefaultRestRouterService):
         specification: Specification = None,
         **kwargs,
     ):
-        return self.ingress_service.find(str(kwargs.get("account")), q, specification=specification)
+        return self.ingress_service.find(
+            str(kwargs.get("account")), q, specification=specification
+        )
 
     def get_entity(
         self,
@@ -146,7 +150,9 @@ class BasicRestRouterService(DefaultRestRouterService):
         specification: Specification = None,
         **kwargs,
     ):
-        return self.ingress_service.get(str(entity_id), str(kwargs.get("account")), specification=specification)
+        return self.ingress_service.get(
+            str(entity_id), str(kwargs.get("account")), specification=specification
+        )
 
     def update_entity(
         self,
@@ -157,7 +163,7 @@ class BasicRestRouterService(DefaultRestRouterService):
         **kwargs,
     ):
         if _entity := self.get_entity(entity_id, specification=specification, **kwargs):
-            _entity = _entity.update(contract.dict())
+            _entity = _entity.update({k: v for k, v in contract.dict().items() if v})
         else:
             _entity = contract.to_entity(
                 id=entity_id,
@@ -176,7 +182,10 @@ class BasicRestRouterService(DefaultRestRouterService):
         **kwargs,
     ) -> Dict:
         self.ingress_service.delete(
-            str(entity_id), str(kwargs.get("sub")), str(kwargs.get("account")), specification=specification
+            str(entity_id),
+            str(kwargs.get("sub")),
+            str(kwargs.get("account")),
+            specification=specification,
         )
         return {}
 

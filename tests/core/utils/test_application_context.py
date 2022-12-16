@@ -56,4 +56,8 @@ def test_adapters(
 
     from fractal.contrib.tokens.services import StaticTokenService
 
-    assert {type(a) for a in context.adapters()} == {inmemory_repository.__class__, fake_service_class, StaticTokenService}
+    assert {type(a) for a in context.adapters()} == {
+        inmemory_repository.__class__,
+        fake_service_class,
+        StaticTokenService,
+    }
