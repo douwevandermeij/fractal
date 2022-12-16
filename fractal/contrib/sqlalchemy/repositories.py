@@ -8,7 +8,7 @@ from typing import Dict, Generator, Generic, List, Optional, TypeVar, get_type_h
 from sqlalchemy import MetaData, Table, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ArgumentError, IntegrityError
-from sqlalchemy.orm import Mapper, Session, sessionmaker
+from sqlalchemy.orm import Mapper, Session, sessionmaker  # NOQA
 
 from fractal.contrib.sqlalchemy.specifications import SqlAlchemyOrmSpecificationBuilder
 from fractal.core.exceptions import DomainException
