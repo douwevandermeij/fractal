@@ -163,7 +163,9 @@ class BasicRestRouterService(DefaultRestRouterService):
         **kwargs,
     ):
         if _entity := self.get_entity(entity_id, specification=specification, **kwargs):
-            _entity = _entity.update({k: v for k, v in contract.dict().items() if v})
+            _entity = _entity.update(
+                {k: v for k, v in contract.dict().items() if v is not None}
+            )
         else:
             _entity = contract.to_entity(
                 id=entity_id,
