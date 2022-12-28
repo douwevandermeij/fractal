@@ -1,9 +1,10 @@
 from abc import ABC
 from dataclasses import dataclass  # NOQA
 
+from pydantic.dataclasses import dataclass
+
 from fractal.core.models import Model
 from fractal.core.repositories import Repository
-from pydantic.dataclasses import dataclass
 
 
 @dataclass

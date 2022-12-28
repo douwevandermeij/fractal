@@ -49,3 +49,16 @@ class CloudStorageRepositoryMixin(SettingsMixin, Repository[Entity]):
         blob = self.bucket.blob(reference)
         blob.delete()
         return True
+
+    # def get_upload_url(self, reference: str) -> str:
+    #     # https://cloud.google.com/storage/docs/access-control/signing-urls-with-helpers#storage-signed-url-object-python
+    #     blob = self.bucket.blob(reference)
+    #
+    #     return blob.generate_signed_url(
+    #         version="v4",
+    #         # This URL is valid for 15 minutes
+    #         expiration=datetime.timedelta(minutes=15),
+    #         # Allow PUT requests using this URL.
+    #         method="PUT",
+    #         content_type="application/octet-stream",
+    #     )

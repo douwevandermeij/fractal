@@ -197,7 +197,7 @@ Applications that use Fractal can be built in many ways, including a non-SOLID a
 The Fractal toolkit tries to make it easier to go for the SOLID approach.
 
 To start a Fractal project, the first class to make derives from `fractal.Fractal`.
-It should provide a `fractal.core.utils.settings.Settings` object and a 
+It should provide a `fractal.core.utils.settings.Settings` object and a
 `fractal.core.utils.application_context.ApplicationContext` object, which should also be derived from.
 
 The `Settings` class provides all static configuration for the application; it's the place where environment variables
@@ -322,7 +322,7 @@ from app.settings import Settings
 class ApplicationContext(BaseContext):
     def load_repositories(self):
         from app.domain.products import ProductRepository
-      
+
         if Settings().PRODUCT_REPOSITORY_BACKEND == "sql":
             '''example: some sql adapter code'''
         elif Settings().PRODUCT_REPOSITORY_BACKEND == "file":
@@ -442,9 +442,9 @@ from fractal.core.utils.application_context import ApplicationContext as BaseCon
 
 
 class ApplicationContext(BaseContext):
-  
+
     ...
-    
+
     def load_command_bus(self):
         super(ApplicationContext, self).load_command_bus()
 
@@ -593,9 +593,9 @@ from fractal.core.utils.application_context import ApplicationContext as BaseCon
 
 
 class ApplicationContext(BaseContext):
-  
+
     ...
-    
+
     def load_event_projectors(self):
         from fractal.core.event_sourcing.projectors.command_bus_projector import (
             CommandBusProjector,

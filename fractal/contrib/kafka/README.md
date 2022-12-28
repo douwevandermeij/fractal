@@ -19,7 +19,7 @@ And in your context:
                 KafkaEventBusProjector,
             )
             from app.service.domain.events.sending import ...
-    
+
             projectors.append(
                 KafkaEventBusProjector(
                     host=Settings().KAFKA_HOST,

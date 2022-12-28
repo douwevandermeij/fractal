@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_is_healthy(sqlalchemy_test_repository):
     assert sqlalchemy_test_repository.is_healthy()
 

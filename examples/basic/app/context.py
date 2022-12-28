@@ -1,6 +1,6 @@
-from fractal.core.utils.application_context import ApplicationContext as BaseContext
-
 from app.settings import Settings
+
+from fractal.core.utils.application_context import ApplicationContext as BaseContext
 
 
 class ApplicationContext(BaseContext):
@@ -8,9 +8,9 @@ class ApplicationContext(BaseContext):
         from app.domain.products import ProductRepository
 
         if Settings().PRODUCT_REPOSITORY_BACKEND == "sql":
-            '''example: some sql adapter code'''
+            """example: some sql adapter code"""
         elif Settings().PRODUCT_REPOSITORY_BACKEND == "file":
-            '''example: some file adapter code'''
+            """example: some file adapter code"""
         else:
             from app.adapters.products import InMemoryProductRepository
 
