@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from fractal.core.specifications.account_id_specification import AccountIdSpecification
-from fractal.core.specifications.generic.specification import Specification
+from fractal_specifications.generic.operators import EqualsSpecification
+from fractal_specifications.generic.specification import Specification
 
 
 class Role:
@@ -11,7 +11,7 @@ class Role:
 
     @staticmethod
     def filter_account(**kwargs) -> Specification:
-        return AccountIdSpecification(str(kwargs.get("account")))
+        return EqualsSpecification("account_id", str(kwargs.get("account")))
 
 
 @dataclass

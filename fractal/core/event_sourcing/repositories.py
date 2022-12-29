@@ -1,11 +1,12 @@
 from typing import Generator, Generic, Optional, Type
 
+from fractal_specifications.generic.specification import Specification
+
 from fractal.core.event_sourcing.event_store import EventStore
 from fractal.core.event_sourcing.event_stream import EventStream
 from fractal.core.event_sourcing.models import EventSourcedAggregateRoot
 from fractal.core.exceptions import AggregateRootError
 from fractal.core.repositories import Entity, Repository
-from fractal.core.specifications.generic.specification import Specification
 
 
 class EventSourcedRepository(Generic[Entity], Repository[Entity]):

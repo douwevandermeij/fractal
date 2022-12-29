@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Generic, Iterator
 
+from fractal_specifications.generic.specification import Specification
+
 from fractal.core.repositories import Entity
-from fractal.core.specifications.generic.specification import Specification
 
 
 class SortRepositoryMixin(Generic[Entity], ABC):

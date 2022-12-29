@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Generic, Iterator, Optional, TypeVar
 
+from fractal_specifications.generic.specification import Specification
+
 from fractal.core.exceptions import DomainException
-from fractal.core.specifications.generic.specification import Specification
 
 Entity = TypeVar("Entity")
 

@@ -1,9 +1,8 @@
 from typing import Callable, Optional
 from uuid import UUID
 
+from fractal_specifications.generic.specification import Specification
 from pydantic.main import BaseModel
-
-from fractal.core.specifications.generic.specification import Specification
 
 
 class TokenPayload(BaseModel):

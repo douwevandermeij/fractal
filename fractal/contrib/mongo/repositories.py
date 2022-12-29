@@ -1,12 +1,14 @@
 import logging
 from typing import Generator, Optional, Tuple
 
+from fractal_specifications.contrib.mongo.specifications import (
+    MongoSpecificationBuilder,
+)
+from fractal_specifications.generic.specification import Specification
 from pymongo import MongoClient
 from pymongo.database import Database
 
-from fractal.contrib.mongo.specifications import MongoSpecificationBuilder
 from fractal.core.repositories import Entity, Repository
-from fractal.core.specifications.generic.specification import Specification
 
 logger = logging.getLogger("app")
 

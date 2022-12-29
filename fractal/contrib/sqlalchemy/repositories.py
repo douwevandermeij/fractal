@@ -5,16 +5,18 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Generator, Generic, List, Optional, TypeVar, get_type_hints
 
+from fractal_specifications.contrib.sqlalchemy.specifications import (
+    SqlAlchemyOrmSpecificationBuilder,
+)
+from fractal_specifications.generic.operators import EqualsSpecification
+from fractal_specifications.generic.specification import Specification
 from sqlalchemy import MetaData, Table, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ArgumentError, IntegrityError
 from sqlalchemy.orm import Mapper, Session, sessionmaker  # NOQA
 
-from fractal.contrib.sqlalchemy.specifications import SqlAlchemyOrmSpecificationBuilder
 from fractal.core.exceptions import DomainException
 from fractal.core.repositories import Entity, Repository
-from fractal.core.specifications.generic.specification import Specification
-from fractal.core.specifications.id_specification import IdSpecification
 
 EntityDao = TypeVar("EntityDao")
 
@@ -146,7 +148,8 @@ class SqlAlchemyRepositoryMixin(
         with self:
             try:
                 existing_entity_dao = self._find_one_raw(
-                    IdSpecification(entity.id), entity_dao_class=entity_dao_class
+                    EqualsSpecification("id", entity.id),
+                    entity_dao_class=entity_dao_class,
                 )
             except ArgumentError:
                 raise UnknownListItemTypeException(

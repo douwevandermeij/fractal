@@ -1,9 +1,10 @@
 from typing import Iterable, Optional
 
+from fractal_specifications.generic.specification import Specification
+
 from fractal.core.process.action import Action
 from fractal.core.process.process import Process
 from fractal.core.process.process_scope import ProcessScope
-from fractal.core.specifications.generic.specification import Specification
 
 
 class IfElseAction(Action):

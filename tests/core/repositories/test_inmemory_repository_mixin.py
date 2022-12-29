@@ -37,9 +37,9 @@ def test_update_upsert_ignore(inmemory_repository, an_object):
 def test_remove_one(inmemory_repository, an_object):
     inmemory_repository.add(an_object)
 
-    from fractal.core.specifications.id_specification import IdSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
-    inmemory_repository.remove_one(IdSpecification(an_object.id))
+    inmemory_repository.remove_one(EqualsSpecification("id", an_object.id))
 
     assert len(inmemory_repository.entities) == 0
 
@@ -47,9 +47,12 @@ def test_remove_one(inmemory_repository, an_object):
 def test_find_one(inmemory_repository, an_object):
     inmemory_repository.add(an_object)
 
-    from fractal.core.specifications.id_specification import IdSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
-    assert inmemory_repository.find_one(IdSpecification(an_object.id)) == an_object
+    assert (
+        inmemory_repository.find_one(EqualsSpecification("id", an_object.id))
+        == an_object
+    )
 
 
 def test_find(inmemory_repository, an_object):
@@ -61,14 +64,17 @@ def test_find(inmemory_repository, an_object):
 def test_find_with_specification(inmemory_repository, an_object):
     inmemory_repository.add(an_object)
 
-    from fractal.core.specifications.id_specification import IdSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
-    assert len(list(inmemory_repository.find(IdSpecification(an_object.id)))) == 1
+    assert (
+        len(list(inmemory_repository.find(EqualsSpecification("id", an_object.id))))
+        == 1
+    )
 
 
 def test_find_with_specification_empty(inmemory_repository, an_object):
     inmemory_repository.add(an_object)
 
-    from fractal.core.specifications.id_specification import IdSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
-    assert len(list(inmemory_repository.find(IdSpecification(2)))) == 0
+    assert len(list(inmemory_repository.find(EqualsSpecification("id", 2)))) == 0

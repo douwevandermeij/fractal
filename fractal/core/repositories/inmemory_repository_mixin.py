@@ -1,9 +1,10 @@
 import uuid
 from typing import Dict, Iterator, Optional
 
+from fractal_specifications.generic.specification import Specification
+
 from fractal.core.exceptions import ObjectNotFoundException
 from fractal.core.repositories import Entity, FileRepository, Repository
-from fractal.core.specifications.generic.specification import Specification
 
 
 class InMemoryRepositoryMixin(Repository[Entity]):

@@ -29,9 +29,9 @@ def test_filter_specification(inmemory_filter_repository, an_object, another_obj
     inmemory_filter_repository.add(an_object)
     inmemory_filter_repository.add(another_object)
 
-    from fractal.core.specifications.id_specification import IdSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
-    specification = IdSpecification("1")
+    specification = EqualsSpecification("id", "1")
 
     assert (
         len(

@@ -2,10 +2,12 @@ from dataclasses import asdict
 from typing import Dict, Generator, Optional, Type
 
 from django.db.models import ForeignKey, Model, Q
+from fractal_specifications.contrib.django.specifications import (
+    DjangoOrmSpecificationBuilder,
+)
+from fractal_specifications.generic.specification import Specification
 
-from fractal.contrib.django.specifications import DjangoOrmSpecificationBuilder
 from fractal.core.repositories import Entity, Repository
-from fractal.core.specifications.generic.specification import Specification
 
 
 class DjangoModelRepositoryMixin(Repository[Entity]):

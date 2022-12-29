@@ -3,7 +3,7 @@ def test_is_healthy(sqlalchemy_test_repository):
 
 
 def test_add(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj = sqlalchemy_test_model("test")
     res = sqlalchemy_test_repository.add(obj)
@@ -29,7 +29,7 @@ def test_find_no_spec(sqlalchemy_test_repository, sqlalchemy_test_model):
 
 
 def test_find_with_spec(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj1 = sqlalchemy_test_model("test1")
     obj2 = sqlalchemy_test_model("test2")
@@ -43,7 +43,7 @@ def test_find_with_spec(sqlalchemy_test_repository, sqlalchemy_test_model):
 
 
 def test_find_with_spec_no_result(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj1 = sqlalchemy_test_model("test1")
     obj2 = sqlalchemy_test_model("test2")
@@ -58,7 +58,7 @@ def test_find_with_spec_no_result(sqlalchemy_test_repository, sqlalchemy_test_mo
 def test_find_with_spec_multiple_results(
     sqlalchemy_test_repository, sqlalchemy_test_model
 ):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj1 = sqlalchemy_test_model("test1")
     obj2 = sqlalchemy_test_model("test2")
@@ -72,14 +72,14 @@ def test_find_with_spec_multiple_results(
 
 
 def test_find_with_and_spec(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj1 = sqlalchemy_test_model("test1")
     obj2 = sqlalchemy_test_model("test2")
     sqlalchemy_test_repository.add(obj1)
     sqlalchemy_test_repository.add(obj2)
 
-    from fractal.core.specifications.generic.collections import AndSpecification
+    from fractal_specifications.generic.collections import AndSpecification
 
     res = list(
         sqlalchemy_test_repository.find(
@@ -97,8 +97,8 @@ def test_find_with_and_spec(sqlalchemy_test_repository, sqlalchemy_test_model):
 
 
 def test_find_with_or_spec(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.collections import OrSpecification
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.collections import OrSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj1 = sqlalchemy_test_model("test1")
     obj2 = sqlalchemy_test_model("test2")
@@ -118,7 +118,7 @@ def test_find_with_or_spec(sqlalchemy_test_repository, sqlalchemy_test_model):
 
 
 def test_update(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj = sqlalchemy_test_model("test")
     sqlalchemy_test_repository.add(obj)
@@ -138,7 +138,7 @@ def test_update(sqlalchemy_test_repository, sqlalchemy_test_model):
 def test_update_add_item(
     sqlalchemy_test_repository, sqlalchemy_test_model, sqlalchemy_test_sub_model
 ):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj = sqlalchemy_test_model("test")
     sqlalchemy_test_repository.add(obj)
@@ -159,7 +159,7 @@ def test_update_add_item(
 def test_update_delete_item(
     sqlalchemy_test_repository, sqlalchemy_test_model, sqlalchemy_test_sub_model
 ):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj = sqlalchemy_test_model("test")
     sqlalchemy_test_repository.add(obj)
@@ -182,7 +182,7 @@ def test_update_delete_item(
 def test_update_item(
     sqlalchemy_test_repository, sqlalchemy_test_model, sqlalchemy_test_sub_model
 ):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj = sqlalchemy_test_model("test")
     sqlalchemy_test_repository.add(obj)
@@ -203,7 +203,7 @@ def test_update_item(
 # def test_update_item_error(
 #     sqlalchemy_test_repository_error, sqlalchemy_test_model, sqlalchemy_test_sub_model
 # ):
-#     from fractal.contrib.sqlalchemy.repositories import UnknownListItemTypeException
+#     from fractal_specifications.contrib.sqlalchemy.repositories import UnknownListItemTypeException
 #
 #     obj = sqlalchemy_test_model("test")
 #     sqlalchemy_test_repository_error.add(obj)
@@ -215,7 +215,7 @@ def test_update_item(
 
 
 def test_update_upsert(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj = sqlalchemy_test_model("test")
 
@@ -230,7 +230,7 @@ def test_update_upsert(sqlalchemy_test_repository, sqlalchemy_test_model):
 
 
 def test_update_upsert_error(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj = sqlalchemy_test_model("test")
 
@@ -244,7 +244,7 @@ def test_update_upsert_error(sqlalchemy_test_repository, sqlalchemy_test_model):
 
 
 def test_remove_one(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj1 = sqlalchemy_test_model("test1")
     obj2 = sqlalchemy_test_model("test2")
@@ -260,7 +260,7 @@ def test_remove_one(sqlalchemy_test_repository, sqlalchemy_test_model):
 
 
 def test_find_one(sqlalchemy_test_repository, sqlalchemy_test_model):
-    from fractal.core.specifications.generic.operators import EqualsSpecification
+    from fractal_specifications.generic.operators import EqualsSpecification
 
     obj1 = sqlalchemy_test_model("test1")
     obj2 = sqlalchemy_test_model("test2")

@@ -1,8 +1,9 @@
 from abc import ABC
 from typing import Callable, Generic, Iterator, List, Optional
 
+from fractal_specifications.generic.specification import Specification
+
 from fractal.core.repositories import Entity, Repository
-from fractal.core.specifications.generic.specification import Specification
 
 
 def filter_results(

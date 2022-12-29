@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Type
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
+from fractal_specifications.generic.specification import Specification
 from pydantic import BaseModel
 
 from fractal import Fractal
@@ -13,7 +14,6 @@ from fractal.contrib.tokens.fractal import DummyTokenRolesFractal
 from fractal.contrib.tokens.models import TokenPayload, TokenPayloadRoles
 from fractal.core.models import Model
 from fractal.core.services import Service
-from fractal.core.specifications.generic.specification import Specification
 from fractal.core.utils.application_context import ApplicationContext
 from fractal.core.utils.settings import Settings
 

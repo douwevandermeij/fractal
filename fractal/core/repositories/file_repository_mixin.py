@@ -3,11 +3,14 @@ import os
 import uuid
 from typing import Iterator, Optional
 
+from fractal_specifications.generic.operators import (
+    EqualsSpecification,
+    NotSpecification,
+)
+from fractal_specifications.generic.specification import Specification
+
 from fractal.core.exceptions import ObjectNotFoundException
 from fractal.core.repositories import Entity, FileRepository, Repository
-from fractal.core.specifications.generic.operators import NotSpecification
-from fractal.core.specifications.generic.specification import Specification
-from fractal.core.specifications.id_specification import IdSpecification
 from fractal.core.utils.json_encoder import EnhancedEncoder
 
 
@@ -38,11 +41,11 @@ class FileRepositoryMixin(RootDirMixin, Repository[Entity]):
 
     def update(self, entity: Entity, upsert=False) -> Entity:
         try:
-            current = self.find_one(IdSpecification(entity.id))
+            current = self.find_one(EqualsSpecification("id", entity.id))
         except ObjectNotFoundException:
             current = None
         if current or upsert:
-            self.remove_one(IdSpecification(entity.id))
+            self.remove_one(EqualsSpecification("id", entity.id))
             return self.add(entity)
 
     def remove_one(self, specification: Specification):

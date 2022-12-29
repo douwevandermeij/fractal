@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from typing import Generic
 
+from fractal_specifications.generic.specification import Specification
+
 from fractal.core.command_bus.command import Command
 from fractal.core.repositories import Entity
-from fractal.core.specifications.generic.specification import Specification
 
 
 @dataclass

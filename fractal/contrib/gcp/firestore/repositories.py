@@ -2,16 +2,18 @@ from dataclasses import asdict
 from datetime import date
 from typing import Iterator, Optional
 
+from fractal_specifications.contrib.google_firestore.specifications import (
+    FirestoreSpecificationBuilder,
+)
+from fractal_specifications.generic.specification import Specification
 from google.cloud import firestore
 from google.cloud.firestore_v1 import Client
 
 from fractal import Settings
 from fractal.contrib.gcp import SettingsMixin
-from fractal.contrib.gcp.firestore.specifications import FirestoreSpecificationBuilder
 from fractal.core.exceptions import ObjectNotFoundException
 from fractal.core.repositories import Entity, Repository
 from fractal.core.repositories.sort_repository_mixin import SortRepositoryMixin
-from fractal.core.specifications.generic.specification import Specification
 
 
 def get_firestore_client(settings: Settings):

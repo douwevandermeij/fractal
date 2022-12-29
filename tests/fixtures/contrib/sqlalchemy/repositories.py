@@ -78,10 +78,9 @@ def sqlalchemy_test_model_dao(sqlalchemy_test_model, sqlalchemy_test_sub_model_d
 def sqlalchemy_test_model_dao_error(
     sqlalchemy_test_model, sqlalchemy_test_sub_model_dao
 ):
+    from fractal_specifications.contrib.sqlalchemy.repositories import SqlAlchemyDao
     from sqlalchemy import Column, MetaData, String, Table
     from sqlalchemy.orm import Mapper, mapper
-
-    from fractal.contrib.sqlalchemy.repositories import SqlAlchemyDao
 
     @dataclass
     class TestModelDao(SqlAlchemyDao):

@@ -25,8 +25,16 @@ repos:
   - repo: local
     hooks:
       - id: autoflake
-        name: Remove unused imports
+        name: Remove unused imports code
         entry: autoflake --in-place --remove-all-unused-imports -r fractal
+        language: system
+        pass_filenames: false
+        always_run: true
+  - repo: local
+    hooks:
+      - id: autoflake
+        name: Remove unused imports tests
+        entry: autoflake --in-place --remove-all-unused-imports -r tests
         language: system
         pass_filenames: false
         always_run: true
