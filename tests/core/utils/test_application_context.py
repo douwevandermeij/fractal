@@ -1,5 +1,4 @@
 def test_load(fake_application_context_class, fake_service_class):
-    assert not fake_application_context_class.instance
     assert not hasattr(
         fake_application_context_class.instance, fake_service_class.__class__.__name__
     )
@@ -8,7 +7,7 @@ def test_load(fake_application_context_class, fake_service_class):
     assert context == fake_application_context_class.instance
 
     assert len(context.repositories) == 1
-    assert len(context.services) == 2
+    assert len(list(context.services)) == 1
 
     from fractal.core.utils.string import camel_to_snake
 
@@ -34,7 +33,7 @@ def test_reload(
     assert context == fake_application_context_class.instance
 
     assert len(context.repositories) == 1
-    assert len(context.services) == 2
+    assert len(list(context.services)) == 1
 
     from fractal.core.utils.string import camel_to_snake
 
@@ -45,19 +44,17 @@ def test_reload(
 def test_adapters(
     fake_application_context_class, inmemory_repository, fake_service_class, settings
 ):
+    context = fake_application_context_class()
     settings.reload(
         {
             "FAKE_SERVICE": "",
         }
     )
-    context = fake_application_context_class()
+    context.reload()
 
-    assert len(list(context.adapters())) == 3
-
-    from fractal.contrib.tokens.services import StaticTokenService
+    assert len(list(context.adapters())) == 2
 
     assert {type(a) for a in context.adapters()} == {
         inmemory_repository.__class__,
         fake_service_class,
-        StaticTokenService,
     }

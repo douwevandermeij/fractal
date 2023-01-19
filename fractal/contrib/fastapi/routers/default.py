@@ -4,40 +4,37 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 from fractal_specifications.generic.specification import Specification
+from fractal_tokens.services.generic import TokenPayload
 from pydantic import BaseModel
 
 from fractal import Fractal
 from fractal.contrib.fastapi.routers import Routes
 from fractal.contrib.fastapi.routers.domain.models import AdapterInfo, Info
-from fractal.contrib.fastapi.routers.tokens import get_payload, get_payload_roles
-from fractal.contrib.tokens.fractal import DummyTokenRolesFractal
-from fractal.contrib.tokens.models import TokenPayload, TokenPayloadRoles
+from fractal.contrib.fastapi.routers.tokens import (
+    TokenPayloadRoles,
+    get_payload,
+    get_payload_roles,
+)
 from fractal.core.models import Model
 from fractal.core.services import Service
-from fractal.core.utils.application_context import ApplicationContext
-from fractal.core.utils.settings import Settings
 
 
-def inject_default_routes(
-    context: ApplicationContext, settings: Optional[Settings] = None
-):
+def inject_default_routes(fractal: Fractal):
     router = APIRouter()
 
     @router.get(Routes.ROOT)
     def read_root():
         return {
-            "FastAPI": settings.APP_NAME
-            if settings and hasattr(settings, "APP_NAME")
+            "FastAPI": fractal.settings.APP_NAME
+            if fractal.settings and hasattr(fractal.settings, "APP_NAME")
             else "Fractal Service",
         }
 
     @router.get(Routes.INFO, responses={200: {"model": Info}})
     def info(
-        payload: TokenPayload = Depends(
-            get_payload(DummyTokenRolesFractal(context, settings))
-        ),
+        payload: TokenPayload = Depends(get_payload(fractal)),
     ):
-        adapters = list(context.adapters())
+        adapters = list(fractal.context.adapters())
         data = [
             AdapterInfo(
                 adapter=adapter.__class__.__name__,
@@ -49,7 +46,7 @@ def inject_default_routes(
             try:
                 data[i].status_ok = adapters[i].is_healthy()
             except Exception as e:
-                context.logger.error(e)
+                fractal.context.logger.error(e)
                 data[i].status_ok = False
         return data
 

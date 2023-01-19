@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fractal-toolkit"
-version = "2.0.0"
+version = "3.0.0"
 description = "Fractal is a scaffolding toolkit for building SOLID logic for your Python applications."
 authors = ["Douwe van der Meij <douwe@karibu-online.nl>"]
 
@@ -25,7 +25,9 @@ classifiers = [
 ]
 description-file = "README.md"
 requires = [
+    "fractal-roles",
     "fractal-specifications",
+    "fractal-tokens",
     "python-dotenv",
 ]
 requires-python=">=3.8"

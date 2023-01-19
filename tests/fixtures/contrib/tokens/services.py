@@ -3,6 +3,6 @@ import pytest
 
 @pytest.fixture
 def dummy_json_token_service_class():
-    from fractal.contrib.tokens.services import DummyJsonTokenService
+    from fractal.contrib.fastapi.routers.tokens import FractalDummyJsonTokenService
 
-    return DummyJsonTokenService
+    return FractalDummyJsonTokenService

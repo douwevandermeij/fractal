@@ -27,13 +27,11 @@ def fastapi_app(settings):
 
 
 @pytest.fixture
-def fastapi_app_with_default_routes(
-    fastapi_app, token_service_application_context, settings
-):
+def fastapi_app_with_default_routes(fastapi_app, token_roles_service_fractal):
     from fractal.contrib.fastapi.routers.default import inject_default_routes
 
     fastapi_app.include_router(
-        inject_default_routes(token_service_application_context, settings),
+        inject_default_routes(token_roles_service_fractal),
         tags=["default"],
     )
     return fastapi_app
@@ -52,16 +50,16 @@ def failing_service_class():
 
 @pytest.fixture
 def failing_service_fastapi_client(
-    fastapi_app, token_service_application_context, failing_service_class, settings
+    fastapi_app, failing_service_class, token_roles_service_fractal
 ):
     from starlette.testclient import TestClient
 
     from fractal.contrib.fastapi.routers.default import inject_default_routes
 
-    token_service_application_context.install_service(failing_service_class)
+    token_roles_service_fractal.context.install_service(failing_service_class)
 
     fastapi_app.include_router(
-        inject_default_routes(token_service_application_context, settings),
+        inject_default_routes(token_roles_service_fractal),
         tags=["default"],
     )
 

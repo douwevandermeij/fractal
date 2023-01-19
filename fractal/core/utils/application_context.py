@@ -105,21 +105,13 @@ class ApplicationContext(object):
     def load_internal_services(self):
         """Load services for internal use of the domain."""
         for name, service in self.registered_internal_services:
-            self.install_service(
+            _service = self.install_service(
                 service(self.settings)
                 if isinstance(service, FunctionType)
                 else service,
                 name=name,
             )
-
-        if hasattr(self.settings, "SECRET_KEY") and self.settings.SECRET_KEY:
-            from fractal.contrib.tokens.services import AutomaticJwtTokenService
-
-            self.install_service(AutomaticJwtTokenService, name="token_service")
-        else:
-            from fractal.contrib.tokens.services import StaticTokenService
-
-            self.install_service(StaticTokenService, name="token_service")
+            setattr(self, name, _service())
 
     def load_repositories(self):
         """Load repositories for data access"""
@@ -185,12 +177,13 @@ class ApplicationContext(object):
     def load_egress_services(self):
         """Load services to external interfaces that are initiated by this service (outbound)"""
         for name, service in self.registered_egress_services:
-            self.install_service(
+            _service = self.install_service(
                 service(self.settings)
                 if isinstance(service, FunctionType)
                 else service,
                 name=name,
             )
+            setattr(self, name, _service())
 
     def load_event_projectors(self):
         from fractal.core.event_sourcing.event import EventCommandMapper
@@ -244,12 +237,13 @@ class ApplicationContext(object):
     def load_ingress_services(self):
         """Load services to external interfaces that are initiated by the external services (inbound)"""
         for name, service in self.registered_ingress_services:
-            self.install_service(
+            _service = self.install_service(
                 service(self.settings)
                 if isinstance(service, FunctionType)
                 else service,
                 name=name,
             )
+            setattr(self, name, _service())
 
     def install_repository(self, repository, *, name=""):
         if not name:
@@ -266,16 +260,18 @@ class ApplicationContext(object):
 
             name = camel_to_snake(service.__name__)
         self.service_names.add(name)
-        setattr(
-            ApplicationContext, name, property(lambda self: next(service.install(self)))
-        )
+        _service = service.install(self)
+        setattr(ApplicationContext, name, lambda self: next(_service))
+        return lambda: next(_service)
 
     @property
     def services(self):
-        services = []
         for service_name in self.service_names:
-            services.append(getattr(self, service_name))
-        return services
+            service = getattr(self, service_name)
+            if callable(service):
+                service = service()
+                setattr(self, service_name, service)
+            yield service
 
     def get_parameters(self, parameters: List[str]) -> Tuple:
         for parameter in parameters:

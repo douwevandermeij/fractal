@@ -37,9 +37,11 @@ def fake_application_context_class(
             super(FakeApplicationContext, self).load_internal_services()
 
             if os.getenv("FAKE_SERVICE", "") == "another":
-                self.install_service(another_fake_service_class, name="fake_service")
+                self.fake_service = self.install_service(
+                    another_fake_service_class, name="fake_service"
+                )()
             else:
-                self.install_service(fake_service_class)
+                self.fake_service = self.install_service(fake_service_class)()
 
         def load_repositories(self):
             super(FakeApplicationContext, self).load_repositories()

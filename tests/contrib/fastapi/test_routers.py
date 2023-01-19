@@ -19,7 +19,8 @@ def test_default_routes_info(fastapi_client, token):
     assert {(i["adapter"], i["status_ok"]) for i in json.loads(response.content)} == {
         ("InMemoryRepository", True),
         ("FakeService", True),
-        ("DummyJsonTokenService", True),
+        # ("FractalDummyJsonTokenService", True),
+        # ("DummyRolesService", True),
     }
 
 
@@ -38,10 +39,11 @@ def test_default_routes_info_error(failing_service_fastapi_client, token):
     )
     assert response.status_code == 200
     assert {(i["adapter"], i["status_ok"]) for i in json.loads(response.content)} == {
+        # ("DummyRolesService", True),
         ("InMemoryRepository", True),
         ("FakeService", True),
-        ("DummyJsonTokenService", True),
         ("FailingService", False),
+        # ("FractalDummyJsonTokenService", True),
     }
 
 
