@@ -1,7 +1,5 @@
-import importlib
 import logging
 import os
-import pathlib
 from types import FunctionType
 from typing import List, Tuple
 
@@ -68,16 +66,6 @@ class ApplicationContext(object):
         self.repositories = set()
         self.repository_names = set()
         self.service_names = set()
-
-        root_dir = pathlib.Path(self.settings.ROOT_DIR)
-        for file_name in pathlib.Path(os.path.dirname(self.settings.BASE_DIR)).glob(
-            "service/**/*.py"
-        ):
-            parts = file_name.parts[len(root_dir.parts) :]
-            if parts[-1].startswith("_"):
-                parts = parts[:-1]
-            importlib.import_module(".".join(parts).replace(".py", ""))
-
         self.load_internal_services()
         self.load_repositories()
         self.load_egress_services()
@@ -194,12 +182,6 @@ class ApplicationContext(object):
 
         projectors = []
 
-        self.command_bus_projector = CommandBusProjector(
-            lambda: self.command_bus,
-            all_subclasses(EventCommandMapper),
-        )
-        projectors.append(self.command_bus_projector)
-
         if getattr(self.settings, "EVENT_STORE_PROJECTOR", None):
             from fractal.core.event_sourcing.projectors.event_store_projector import (
                 EventStoreProjector,
@@ -223,6 +205,13 @@ class ApplicationContext(object):
                     topic=getattr(self.settings, "GCP_PUBSUB_TOPIC", ""),
                 ),
             )
+
+        # First process all notifiers/emitters/persistency before chaining commands (and projecting new events)
+        self.command_bus_projector = CommandBusProjector(
+            lambda: self.command_bus,
+            all_subclasses(EventCommandMapper),
+        )
+        projectors.append(self.command_bus_projector)
 
         return projectors
 

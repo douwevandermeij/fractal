@@ -215,7 +215,7 @@ def inject_default_rest_routes(
         return router_service_class().add_entity(
             contract=entity,
             specification=payload.specification,
-            **payload.dict(),
+            **payload.asdict(),
         )
 
     @router.get(
@@ -237,7 +237,7 @@ def inject_default_rest_routes(
         return router_service_class().find_entities(
             q=q,
             specification=payload.specification,
-            **payload.dict(),
+            **payload.asdict(),
         )
 
     @router.get(
@@ -259,7 +259,7 @@ def inject_default_rest_routes(
         return router_service_class().get_entity(
             entity_id=entity_id,
             specification=payload.specification,
-            **payload.dict(),
+            **payload.asdict(),
         )
 
     @router.put(
@@ -283,7 +283,7 @@ def inject_default_rest_routes(
             entity_id=entity_id,
             contract=entity,
             specification=payload.specification,
-            **payload.dict(),
+            **payload.asdict(),
         )
 
     @router.delete(
@@ -305,7 +305,7 @@ def inject_default_rest_routes(
         return router_service_class().delete_entity(
             entity_id=entity_id,
             specification=payload.specification,
-            **payload.dict(),
+            **payload.asdict(),
         )
 
     return router
