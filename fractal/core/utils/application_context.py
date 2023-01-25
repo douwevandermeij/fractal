@@ -69,10 +69,7 @@ class ApplicationContext(object):
         self.load_internal_services()
         self.load_repositories()
         self.load_egress_services()
-
-        from fractal.core.event_sourcing.event_publisher import EventPublisher
-
-        self.event_publisher = EventPublisher(self.load_event_projectors())
+        self.load_event_publisher()
         self.load_command_bus()
         self.load_ingress_services()
 
@@ -172,6 +169,11 @@ class ApplicationContext(object):
                 name=name,
             )
             setattr(self, name, _service())
+
+    def load_event_publisher(self):
+        from fractal.core.event_sourcing.event_publisher import EventPublisher
+
+        self.event_publisher = EventPublisher(self.load_event_projectors())
 
     def load_event_projectors(self):
         from fractal.core.event_sourcing.event import EventCommandMapper
