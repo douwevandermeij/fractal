@@ -50,8 +50,9 @@ class FirestoreRepositoryMixin(SettingsMixin, Repository[Entity]):
 
         client: Client = get_firestore_client(self.settings)
         if app_name := getattr(self.settings, "APP_NAME"):
+            app_name = app_name.lower().replace(" ", "-")
             self.collection = client.collection(
-                f"{app_name.lower()}-{self.entity.__name__.lower()}"
+                f"{app_name}-{self.entity.__name__.lower()}"
             )
         else:
             self.collection = client.collection(self.entity.__name__.lower())
