@@ -133,7 +133,7 @@ class BasicRestRouterService(DefaultRestRouterService):
     ):
         return self.ingress_service.get(
             entity_id=str(entity_id),
-            acount_id=str(kwargs.get("account")),
+            account_id=str(kwargs.get("account")),
             specification=specification,
         )
 
