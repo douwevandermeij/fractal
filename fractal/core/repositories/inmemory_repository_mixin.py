@@ -44,7 +44,7 @@ class InMemoryRepositoryMixin(Repository[Entity]):
         *,
         offset: int = 0,
         limit: int = 0,
-        order_by: str = "id",
+        order_by: str = "",
     ) -> Iterator[Entity]:
         if specification:
             entities = filter(
@@ -58,10 +58,14 @@ class InMemoryRepositoryMixin(Repository[Entity]):
             order_by = order_by[1:]
             reverse = True
 
-        entities = sorted(entities, key=lambda i: getattr(i, order_by), reverse=reverse)
+        order_by = order_by or self.order_by
+        if order_by:
+            entities = sorted(
+                entities, key=lambda i: getattr(i, order_by), reverse=reverse
+            )
 
         if limit:
-            entities = entities[offset : offset + limit]
+            entities = list(entities)[offset : offset + limit]
         for entity in entities:
             yield entity
 

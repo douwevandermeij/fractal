@@ -223,8 +223,9 @@ class SqlAlchemyRepositoryMixin(
         *,
         offset: int = 0,
         limit: int = 0,
-        order_by: str = "id",
+        order_by: str = "",
     ) -> Generator[Entity, None, None]:
+        order_by = order_by or self.order_by
         entities = self._find_raw(
             specification=specification,
             offset=offset,
@@ -278,7 +279,7 @@ class SqlAlchemyRepositoryMixin(
         entity_dao_class: Optional[SqlAlchemyDao] = None,
         offset: int = 0,
         limit: int = 0,
-        order_by: str = "id",
+        order_by: str = "",
     ) -> List[Entity]:
         _filter = {}
         if specification:
@@ -310,19 +311,21 @@ class SqlAlchemyRepositoryMixin(
             else:
                 filters = _filter
 
-        if order_by.startswith("-"):
-            _order_by = getattr(entity_dao_class or self.entity_dao, order_by[1:])
-            desc = True
-        else:
-            _order_by = getattr(entity_dao_class or self.entity_dao, order_by)
-            desc = False
-
         ret = self.session.query(entity_dao_class or self.entity_dao)
         if type(filters) == dict:
             ret = ret.filter_by(**filters)
         if type(filters) == BooleanClauseList:
             ret = ret.where(filters)
-        ret = ret.order_by(_order_by.desc() if desc else _order_by)
+
+        if order_by:
+            if order_by.startswith("-"):
+                _order_by = getattr(entity_dao_class or self.entity_dao, order_by[1:])
+                desc = True
+            else:
+                _order_by = getattr(entity_dao_class or self.entity_dao, order_by)
+                desc = False
+            ret = ret.order_by(_order_by.desc() if desc else _order_by)
+
         if limit:
             ret = ret.offset(offset)
             ret = ret.limit(limit)

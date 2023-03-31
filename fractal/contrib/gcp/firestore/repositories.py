@@ -97,20 +97,25 @@ class FirestoreRepositoryMixin(SettingsMixin, Repository[Entity]):
         *,
         offset: int = 0,
         limit: int = 0,
-        order_by: str = "id",
+        order_by: str = "",
     ) -> Iterator[Entity]:
         _filter = FirestoreSpecificationBuilder.build(specification)
         direction = Query.ASCENDING
         if order_by.startswith("-"):
             order_by = order_by[1:]
             direction = Query.DESCENDING
-        collection = self.collection.order_by(order_by, direction=direction)
+        collection = self.collection
         if _filter:
             if isinstance(_filter, list):
                 for f in _filter:
                     collection = collection.where(*f)
             else:
                 collection = collection.where(*_filter)
+
+        order_by = order_by or self.order_by
+        if order_by:
+            collection = collection.order_by(order_by, direction=direction)
+
         if limit:
             if offset and (last := list(collection.limit(offset).stream())[-1]):
                 collection = collection.start_after(

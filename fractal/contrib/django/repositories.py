@@ -71,12 +71,16 @@ class DjangoModelRepositoryMixin(Repository[Entity]):
         *,
         offset: int = 0,
         limit: int = 0,
-        order_by: str = "id",
+        order_by: str = "",
     ) -> Generator[Entity, None, None]:
         if _filter := DjangoOrmSpecificationBuilder.build(specification):
-            queryset = self.django_model.objects.filter(_filter).order_by(order_by)
+            queryset = self.django_model.objects.filter(_filter)
         else:
-            queryset = self.django_model.objects.all().order_by(order_by)
+            queryset = self.django_model.objects.all()
+
+        order_by = order_by or self.order_by
+        if order_by:
+            queryset = queryset.order_by(order_by)
 
         if limit:
             queryset.offset(offset).limit(limit)

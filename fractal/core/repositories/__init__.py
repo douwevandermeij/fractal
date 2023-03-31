@@ -11,6 +11,7 @@ Entity = TypeVar("Entity")
 class Repository(Generic[Entity], ABC):
     entity: Optional[Entity] = None
     object_not_found_exception: Optional[DomainException] = None
+    order_by: str = ""
 
     @abstractmethod
     def add(self, entity: Entity) -> Entity:
@@ -35,7 +36,7 @@ class Repository(Generic[Entity], ABC):
         *,
         offset: int = 0,
         limit: int = 0,
-        order_by: str = "id",
+        order_by: str = "",
     ) -> Iterator[Entity]:
         raise NotImplementedError
 

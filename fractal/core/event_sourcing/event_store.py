@@ -41,6 +41,7 @@ class EventStore(ABC):
 
 class EventStoreRepository(Repository[Message], ABC):
     entity = Message
+    order_by = "occurred_on"
 
 
 class InMemoryEventStoreRepository(

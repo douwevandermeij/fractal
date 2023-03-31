@@ -75,25 +75,26 @@ class MongoRepositoryMixin(Repository[Entity]):
         *,
         offset: int = 0,
         limit: int = 0,
-        order_by: str = "id",
+        order_by: str = "",
     ) -> Generator[Entity, None, None]:
         direction = 1
         if order_by.startswith("-"):
             order_by = order_by[1:]
             direction = -1
+
+        collection = self.collection.find(
+            MongoSpecificationBuilder.build(specification)
+        )
+
+        order_by = order_by or self.order_by
+        if order_by:
+            collection = collection.sort({order_by: direction})
+
         if limit:
-            for obj in (
-                self.collection.find(MongoSpecificationBuilder.build(specification))
-                .sort({order_by: direction})
-                .skip(offset)
-                .limit(limit)
-            ):
-                yield self._obj_to_domain(obj)
-        else:
-            for obj in self.collection.find(
-                MongoSpecificationBuilder.build(specification)
-            ).sort({order_by: direction}):
-                yield self._obj_to_domain(obj)
+            collection = collection.skip(offset).limit(limit)
+
+        for obj in collection.sort({order_by: direction}):
+            yield self._obj_to_domain(obj)
 
     def is_healthy(self) -> bool:
         ok = self.client.server_info().get("ok", False)
