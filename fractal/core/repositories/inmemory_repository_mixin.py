@@ -25,9 +25,13 @@ class InMemoryRepositoryMixin(Repository[Entity]):
         if obj := self.find_one(specification):
             del self.entities[obj.id]
 
+    @property
+    def _get_entities(self):
+        return self._entities if hasattr(self, "_entities") else self.entities.values()
+
     def find_one(self, specification: Specification) -> Optional[Entity]:
         for entity in filter(
-            lambda i: specification.is_satisfied_by(i), self.entities.values()
+            lambda i: specification.is_satisfied_by(i), self._get_entities
         ):
             return entity
         if self.object_not_found_exception:
@@ -44,10 +48,10 @@ class InMemoryRepositoryMixin(Repository[Entity]):
     ) -> Iterator[Entity]:
         if specification:
             entities = filter(
-                lambda i: specification.is_satisfied_by(i), self.entities.values()
+                lambda i: specification.is_satisfied_by(i), self._get_entities
             )
         else:
-            entities = self.entities.values()
+            entities = self._get_entities
 
         reverse = False
         if order_by.startswith("-"):
