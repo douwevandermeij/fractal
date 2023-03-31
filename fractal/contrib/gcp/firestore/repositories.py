@@ -6,14 +6,12 @@ from fractal_specifications.contrib.google_firestore.specifications import (
     FirestoreSpecificationBuilder,
 )
 from fractal_specifications.generic.specification import Specification
-from google.cloud import firestore
-from google.cloud.firestore_v1 import Client
+from google.cloud.firestore_v1 import Client, Query
 
 from fractal import Settings
 from fractal.contrib.gcp import SettingsMixin
 from fractal.core.exceptions import ObjectNotFoundException
 from fractal.core.repositories import Entity, Repository
-from fractal.core.repositories.sort_repository_mixin import SortRepositoryMixin
 
 
 def get_firestore_client(settings: Settings):
@@ -93,15 +91,33 @@ class FirestoreRepositoryMixin(SettingsMixin, Repository[Entity]):
             raise self.object_not_found_exception
         raise ObjectNotFoundException(f"{self.entity.__name__} not found!")
 
-    def find(self, specification: Specification = None) -> Iterator[Entity]:
+    def find(
+        self,
+        specification: Specification = None,
+        *,
+        offset: int = 0,
+        limit: int = 0,
+        order_by: str = "id",
+    ) -> Iterator[Entity]:
         _filter = FirestoreSpecificationBuilder.build(specification)
-        collection = self.collection
+        direction = Query.ASCENDING
+        if order_by.startswith("-"):
+            order_by = order_by[1:]
+            direction = Query.DESCENDING
+        collection = self.collection.order_by(order_by, direction=direction)
         if _filter:
             if isinstance(_filter, list):
                 for f in _filter:
                     collection = collection.where(*f)
             else:
                 collection = collection.where(*_filter)
+        if limit:
+            if offset and (last := list(collection.limit(offset).stream())[-1]):
+                collection = collection.start_after(
+                    {order_by: last.to_dict().get(order_by)}
+                ).limit(limit)
+            else:
+                collection = collection.limit(limit)
         for doc in collection.stream():
             yield self.entity.from_dict(doc.to_dict())
 
@@ -123,30 +139,3 @@ class FirestoreRepositoryDictMixin(FirestoreRepositoryMixin[Entity]):
                 doc_ref.set(entity.asdict(skip_types=(date,)))
             return entity
         return self.add(entity)
-
-
-class FirestoreSortRepositoryMixin(SortRepositoryMixin[Entity]):
-    def find_sort(
-        self, specification: Specification = None, *, order_by: str = "", limit: int = 0
-    ) -> Iterator[Entity]:
-        _filter = FirestoreSpecificationBuilder.build(specification)
-        collection = self.collection
-        if _filter:
-            if isinstance(_filter, list):
-                for f in _filter:
-                    collection = collection.where(*f)
-            else:
-                collection = collection.where(*_filter)
-        if order_by:
-            if reverse := order_by.startswith("-"):
-                order_by = order_by[1:]
-            collection = collection.order_by(
-                order_by,
-                direction=firestore.Query.DESCENDING
-                if reverse
-                else firestore.Query.ASCENDING,
-            )
-        if limit:
-            collection = collection.limit(limit)
-        for doc in collection.stream():
-            yield self.entity.from_dict(doc.to_dict())

@@ -20,6 +20,11 @@ def another_object():
 
 
 @pytest.fixture
+def yet_another_object():
+    return AnObject("3", "yet_another_object")
+
+
+@pytest.fixture
 def inmemory_repository():
     from fractal.core.repositories.inmemory_repository_mixin import (
         InMemoryRepositoryMixin,

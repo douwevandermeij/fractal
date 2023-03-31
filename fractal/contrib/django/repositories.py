@@ -66,17 +66,20 @@ class DjangoModelRepositoryMixin(Repository[Entity]):
         return self._obj_to_domain(self.__get_obj(specification).__dict__)
 
     def find(
-        self, specification: Specification = None
+        self,
+        specification: Specification = None,
+        *,
+        offset: int = 0,
+        limit: int = 0,
+        order_by: str = "id",
     ) -> Generator[Entity, None, None]:
-        _filter = DjangoOrmSpecificationBuilder.build(specification)
-        if type(_filter) is list:
-            queryset = self.django_model.objects.filter(*_filter)
-        elif type(_filter) is dict:
-            queryset = self.django_model.objects.filter(**_filter)
-        elif type(_filter) is Q:
-            queryset = self.django_model.objects.filter(_filter)
+        if _filter := DjangoOrmSpecificationBuilder.build(specification):
+            queryset = self.django_model.objects.filter(_filter).order_by(order_by)
         else:
-            queryset = self.django_model.objects.all()
+            queryset = self.django_model.objects.all().order_by(order_by)
+
+        if limit:
+            queryset.offset(offset).limit(limit)
 
         for obj in queryset:
             yield self._obj_to_domain(obj.__dict__)

@@ -1,5 +1,5 @@
 def test_load(fake_application_context_class, fake_service_class):
-    assert not hasattr(
+    assert not getattr(
         fake_application_context_class.instance, fake_service_class.__class__.__name__
     )
 

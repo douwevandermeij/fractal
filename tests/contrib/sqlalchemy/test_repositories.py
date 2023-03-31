@@ -28,6 +28,82 @@ def test_find_no_spec(sqlalchemy_test_repository, sqlalchemy_test_model):
     assert res == [obj1, obj2]
 
 
+def test_find_order_by_offset_limit(sqlalchemy_test_repository, sqlalchemy_test_model):
+    obj1 = sqlalchemy_test_model("1", "test1")
+    obj2 = sqlalchemy_test_model("2", "test2")
+    sqlalchemy_test_repository.add(obj1)
+    sqlalchemy_test_repository.add(obj2)
+
+    assert list(sqlalchemy_test_repository.find(limit=1)) == [obj1]
+    assert list(sqlalchemy_test_repository.find(limit=1, order_by="name")) == [obj1]
+    assert list(sqlalchemy_test_repository.find(limit=1, order_by="-name")) == [obj2]
+    assert list(
+        sqlalchemy_test_repository.find(offset=1, limit=1, order_by="name")
+    ) == [obj2]
+    assert list(
+        sqlalchemy_test_repository.find(offset=1, limit=1, order_by="-name")
+    ) == [obj1]
+    assert list(sqlalchemy_test_repository.find(offset=2, limit=1)) == []
+
+
+def test_find_order_by_offset_limit_with_spec(
+    sqlalchemy_test_repository, sqlalchemy_test_model
+):
+    from fractal_specifications.generic.operators import EqualsSpecification
+
+    obj1 = sqlalchemy_test_model("1", "test1")
+    obj2 = sqlalchemy_test_model("2", "test2")
+    sqlalchemy_test_repository.add(obj1)
+    sqlalchemy_test_repository.add(obj2)
+
+    spec = EqualsSpecification("id", "1")
+
+    assert list(sqlalchemy_test_repository.find(spec, limit=1)) == [obj1]
+    assert list(sqlalchemy_test_repository.find(spec, limit=1, order_by="name")) == [
+        obj1
+    ]
+    assert list(sqlalchemy_test_repository.find(spec, limit=1, order_by="-name")) == [
+        obj1
+    ]
+    assert (
+        list(sqlalchemy_test_repository.find(spec, offset=1, limit=1, order_by="name"))
+        == []
+    )
+    assert (
+        list(sqlalchemy_test_repository.find(spec, offset=1, limit=1, order_by="-name"))
+        == []
+    )
+    assert list(sqlalchemy_test_repository.find(spec, offset=2, limit=1)) == []
+
+
+def test_find_order_by_offset_limit_with_or_spec(
+    sqlalchemy_test_repository, sqlalchemy_test_model
+):
+    from fractal_specifications.generic.operators import EqualsSpecification
+
+    obj1 = sqlalchemy_test_model("1", "test1")
+    obj2 = sqlalchemy_test_model("2", "test2")
+    sqlalchemy_test_repository.add(obj1)
+    sqlalchemy_test_repository.add(obj2)
+
+    spec = EqualsSpecification("id", "1") | EqualsSpecification("name", "test2")
+
+    assert list(sqlalchemy_test_repository.find(spec, limit=1)) == [obj1]
+    assert list(sqlalchemy_test_repository.find(spec, limit=1, order_by="name")) == [
+        obj1
+    ]
+    assert list(sqlalchemy_test_repository.find(spec, limit=1, order_by="-name")) == [
+        obj2
+    ]
+    assert list(
+        sqlalchemy_test_repository.find(spec, offset=1, limit=1, order_by="name")
+    ) == [obj2]
+    assert list(
+        sqlalchemy_test_repository.find(spec, offset=1, limit=1, order_by="-name")
+    ) == [obj1]
+    assert list(sqlalchemy_test_repository.find(spec, offset=2, limit=1)) == []
+
+
 def test_find_with_spec(sqlalchemy_test_repository, sqlalchemy_test_model):
     from fractal_specifications.generic.operators import EqualsSpecification
 

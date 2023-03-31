@@ -23,6 +23,9 @@ class ApplicationContext(object):
             cls.instance.load()
         return cls.instance
 
+    def __getattr__(self, item):
+        return None
+
     @classmethod
     def register_repository(cls, name):
         setattr(cls, name, None)

@@ -111,6 +111,32 @@ class Contract(BaseModel, ABC):
 
 
 class BasicRestRouterService(DefaultRestRouterService):
+    def find_entities(
+        self,
+        q: str = "",
+        *,
+        specification: Specification = None,
+        **kwargs,
+    ):
+        return self.ingress_service.find(
+            account_id=str(kwargs.get("account")),
+            q=q,
+            specification=specification,
+        )
+
+    def get_entity(
+        self,
+        entity_id: UUID,
+        *,
+        specification: Specification = None,
+        **kwargs,
+    ):
+        return self.ingress_service.get(
+            entity_id=str(entity_id),
+            acount_id=str(kwargs.get("account")),
+            specification=specification,
+        )
+
     def add_entity(
         self,
         contract: Contract,
@@ -126,29 +152,9 @@ class BasicRestRouterService(DefaultRestRouterService):
             user_id=kwargs.get("sub"), account_id=kwargs.get("account")
         )
         return self.ingress_service.add(
-            _entity, str(kwargs.get("sub")), specification=specification
-        )
-
-    def find_entities(
-        self,
-        q: str = "",
-        *,
-        specification: Specification = None,
-        **kwargs,
-    ):
-        return self.ingress_service.find(
-            str(kwargs.get("account")), q, specification=specification
-        )
-
-    def get_entity(
-        self,
-        entity_id: UUID,
-        *,
-        specification: Specification = None,
-        **kwargs,
-    ):
-        return self.ingress_service.get(
-            str(entity_id), str(kwargs.get("account")), specification=specification
+            entity=_entity,
+            user_id=str(kwargs.get("sub")),
+            specification=specification,
         )
 
     def update_entity(
@@ -170,7 +176,10 @@ class BasicRestRouterService(DefaultRestRouterService):
                 account_id=kwargs.get("account"),
             )
         return self.ingress_service.update(
-            str(entity_id), _entity, str(kwargs.get("sub")), specification=specification
+            entity_id=str(entity_id),
+            entity=_entity,
+            user_id=str(kwargs.get("sub")),
+            specification=specification,
         )
 
     def delete_entity(
@@ -181,9 +190,9 @@ class BasicRestRouterService(DefaultRestRouterService):
         **kwargs,
     ) -> Dict:
         self.ingress_service.delete(
-            str(entity_id),
-            str(kwargs.get("sub")),
-            str(kwargs.get("account")),
+            entity_id=str(entity_id),
+            user_id=str(kwargs.get("sub")),
+            account_id=str(kwargs.get("account")),
             specification=specification,
         )
         return {}

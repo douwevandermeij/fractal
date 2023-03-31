@@ -14,6 +14,7 @@ from sqlalchemy import MetaData, Table, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ArgumentError, IntegrityError
 from sqlalchemy.orm import Mapper, Session, sessionmaker  # NOQA
+from sqlalchemy.sql.elements import BooleanClauseList
 
 from fractal.core.exceptions import DomainException
 from fractal.core.repositories import Entity, Repository
@@ -217,9 +218,19 @@ class SqlAlchemyRepositoryMixin(
             return self._dao_to_domain(entity)
 
     def find(
-        self, specification: Optional[Specification] = None
+        self,
+        specification: Optional[Specification] = None,
+        *,
+        offset: int = 0,
+        limit: int = 0,
+        order_by: str = "id",
     ) -> Generator[Entity, None, None]:
-        entities = self._find_raw(specification)
+        entities = self._find_raw(
+            specification=specification,
+            offset=offset,
+            limit=limit,
+            order_by=order_by,
+        )
 
         if specification:
             entities = filter(lambda i: specification.is_satisfied_by(i), entities)
@@ -265,25 +276,58 @@ class SqlAlchemyRepositoryMixin(
         specification: Optional[Specification],
         *,
         entity_dao_class: Optional[SqlAlchemyDao] = None,
+        offset: int = 0,
+        limit: int = 0,
+        order_by: str = "id",
     ) -> List[Entity]:
         _filter = {}
         if specification:
             _filter = SqlAlchemyOrmSpecificationBuilder.build(specification)
         if isinstance(_filter, list):
-            entities = []
+            filters = {}
             for f in _filter:
-                entities.extend(
-                    list(
-                        self.session.query(
-                            entity_dao_class or self.entity_dao
-                        ).filter_by(**dict(f))
-                    )
-                )
-            return entities
-        else:
-            return self.session.query(entity_dao_class or self.entity_dao).filter_by(
-                **dict(_filter)
+                filters.update(f)
+            from sqlalchemy import or_
+
+            # TODO move to SqlAlchemyOrmSpecificationBuilder
+            filters = or_(
+                *[
+                    getattr(entity_dao_class or self.entity_dao, k) == v
+                    for k, v in filters.items()
+                ]
             )
+        else:
+            from sqlalchemy import and_
+
+            if len(_filter) > 1:
+                # TODO move to SqlAlchemyOrmSpecificationBuilder
+                filters = and_(
+                    *[
+                        getattr(entity_dao_class or self.entity_dao, k) == v
+                        for k, v in _filter.items()
+                    ]
+                )
+            else:
+                filters = _filter
+
+        if order_by.startswith("-"):
+            _order_by = getattr(entity_dao_class or self.entity_dao, order_by[1:])
+            desc = True
+        else:
+            _order_by = getattr(entity_dao_class or self.entity_dao, order_by)
+            desc = False
+
+        ret = self.session.query(entity_dao_class or self.entity_dao)
+        if type(filters) == dict:
+            ret = ret.filter_by(**filters)
+        if type(filters) == BooleanClauseList:
+            ret = ret.where(filters)
+        ret = ret.order_by(_order_by.desc() if desc else _order_by)
+        if limit:
+            ret = ret.offset(offset)
+            ret = ret.limit(limit)
+            return ret
+        return ret
 
     def is_healthy(self) -> bool:
         try:

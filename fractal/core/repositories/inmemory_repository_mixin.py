@@ -34,13 +34,30 @@ class InMemoryRepositoryMixin(Repository[Entity]):
             raise self.object_not_found_exception
         raise ObjectNotFoundException(f"{self.entity.__name__} not found!")
 
-    def find(self, specification: Optional[Specification] = None) -> Iterator[Entity]:
+    def find(
+        self,
+        specification: Optional[Specification] = None,
+        *,
+        offset: int = 0,
+        limit: int = 0,
+        order_by: str = "id",
+    ) -> Iterator[Entity]:
         if specification:
             entities = filter(
                 lambda i: specification.is_satisfied_by(i), self.entities.values()
             )
         else:
             entities = self.entities.values()
+
+        reverse = False
+        if order_by.startswith("-"):
+            order_by = order_by[1:]
+            reverse = True
+
+        entities = sorted(entities, key=lambda i: getattr(i, order_by), reverse=reverse)
+
+        if limit:
+            entities = entities[offset : offset + limit]
         for entity in entities:
             yield entity
 

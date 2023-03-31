@@ -29,7 +29,14 @@ class Repository(Generic[Entity], ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def find(self, specification: Specification = None) -> Iterator[Entity]:
+    def find(
+        self,
+        specification: Specification = None,
+        *,
+        offset: int = 0,
+        limit: int = 0,
+        order_by: str = "id",
+    ) -> Iterator[Entity]:
         raise NotImplementedError
 
     @abstractmethod

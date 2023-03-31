@@ -32,9 +32,14 @@ class FilterRepositoryMixin(Repository[Entity], Generic[Entity], ABC):
         fields: List[str],
         specification: Specification = None,
         pre_processor: Optional[Callable[[str], str]] = None,
+        offset: int = 0,
+        limit: int = 0,
+        order_by: str = "id",
     ) -> Iterator[Entity]:
         if not q:
-            return self.find(specification)
+            return self.find(
+                specification, offset=offset, limit=limit, order_by=order_by
+            )
         return filter_results(
             q,
             fields=fields,

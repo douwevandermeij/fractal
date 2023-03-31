@@ -70,10 +70,30 @@ class MongoRepositoryMixin(Repository[Entity]):
             return self._obj_to_domain(obj)
 
     def find(
-        self, specification: Specification = None
+        self,
+        specification: Specification = None,
+        *,
+        offset: int = 0,
+        limit: int = 0,
+        order_by: str = "id",
     ) -> Generator[Entity, None, None]:
-        for obj in self.collection.find(MongoSpecificationBuilder.build(specification)):
-            yield self._obj_to_domain(obj)
+        direction = 1
+        if order_by.startswith("-"):
+            order_by = order_by[1:]
+            direction = -1
+        if limit:
+            for obj in (
+                self.collection.find(MongoSpecificationBuilder.build(specification))
+                .sort({order_by: direction})
+                .skip(offset)
+                .limit(limit)
+            ):
+                yield self._obj_to_domain(obj)
+        else:
+            for obj in self.collection.find(
+                MongoSpecificationBuilder.build(specification)
+            ).sort({order_by: direction}):
+                yield self._obj_to_domain(obj)
 
     def is_healthy(self) -> bool:
         ok = self.client.server_info().get("ok", False)

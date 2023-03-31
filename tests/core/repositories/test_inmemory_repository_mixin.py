@@ -55,10 +55,50 @@ def test_find_one(inmemory_repository, an_object):
     )
 
 
-def test_find(inmemory_repository, an_object):
+def test_find(inmemory_repository, an_object, another_object, yet_another_object):
     inmemory_repository.add(an_object)
+    inmemory_repository.add(another_object)
+    inmemory_repository.add(yet_another_object)
 
-    assert len(list(inmemory_repository.find())) == 1
+    assert len(list(inmemory_repository.find())) == 3
+
+
+def test_find_order_by(
+    inmemory_repository, an_object, another_object, yet_another_object
+):
+    inmemory_repository.add(an_object)
+    inmemory_repository.add(another_object)
+    inmemory_repository.add(yet_another_object)
+
+    assert [i.name for i in inmemory_repository.find(order_by="name")] == [
+        another_object.name,
+        an_object.name,
+        yet_another_object.name,
+    ]
+    assert [i.name for i in inmemory_repository.find(order_by="-name")] == [
+        yet_another_object.name,
+        an_object.name,
+        another_object.name,
+    ]
+
+
+def test_find_offset_limit(
+    inmemory_repository, an_object, another_object, yet_another_object
+):
+    inmemory_repository.add(an_object)
+    inmemory_repository.add(another_object)
+    inmemory_repository.add(yet_another_object)
+
+    assert [i.name for i in inmemory_repository.find(limit=1)] == [an_object.name]
+    assert [i.name for i in inmemory_repository.find(order_by="-name", limit=1)] == [
+        yet_another_object.name
+    ]
+    assert [i.name for i in inmemory_repository.find(offset=2, limit=1)] == [
+        yet_another_object.name
+    ]
+    assert [
+        i.name for i in inmemory_repository.find(offset=2, order_by="-name", limit=1)
+    ] == [another_object.name]
 
 
 def test_find_with_specification(inmemory_repository, an_object):
