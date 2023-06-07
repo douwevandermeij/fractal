@@ -1,7 +1,7 @@
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from json import JSONEncoder
 from typing import List, Optional, Type
 
@@ -64,7 +64,7 @@ class ObjectEventStore(BasicEventStore):
             self.event_store_repository.add(
                 Message(
                     id=str(uuid.uuid4()),
-                    occurred_on=datetime.utcnow(),
+                    occurred_on=datetime.now(timezone.utc),
                     event=event.__class__.__name__,
                     data=event,
                     object_id=event.object_id,
@@ -96,7 +96,7 @@ class DictEventStore(BasicEventStore):
             self.event_store_repository.add(
                 Message(
                     id=str(uuid.uuid4()),
-                    occurred_on=datetime.utcnow(),
+                    occurred_on=datetime.now(timezone.utc),
                     event=event.__class__.__name__,
                     data=asdict(event),
                     object_id=event.object_id,
@@ -134,7 +134,7 @@ class JsonEventStore(BasicEventStore):
             self.event_store_repository.add(
                 Message(
                     id=str(uuid.uuid4()),
-                    occurred_on=datetime.utcnow(),
+                    occurred_on=datetime.now(timezone.utc),
                     event=event.__class__.__name__,
                     data=json.dumps(asdict(event), cls=self.json_encoder),
                     object_id=event.object_id,
@@ -172,7 +172,7 @@ class PickleEventStore(BasicEventStore):
             self.event_store_repository.add(
                 Message(
                     id=str(uuid.uuid4()),
-                    occurred_on=datetime.utcnow(),
+                    occurred_on=datetime.now(timezone.utc),
                     event=event.__class__.__name__,
                     data=pickle.dumps(event),
                     object_id=event.object_id,

@@ -6,8 +6,8 @@ from fastapi.security import OAuth2PasswordBearer
 from fractal_roles.models import Role, TokenPayloadRolesMixin
 from fractal_roles.services import RolesService as BaseRolesService
 from fractal_tokens.services.dummy import DummyJsonTokenService
+from fractal_tokens.services.generic import TokenPayload as BaseTokenPayload
 from fractal_tokens.services.generic import TokenService
-from fractal_tokens.services.jwt import TokenPayload as BaseTokenPayload
 from fractal_tokens.services.jwt.automatic import AutomaticJwtTokenService
 
 from fractal import ApplicationContext, Fractal

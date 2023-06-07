@@ -8,7 +8,7 @@ coverage:  ## Run tests with coverage
 
 deps:  ## Install dependencies
 	python -m pip install --upgrade pip
-	python -m pip install autoflake black coverage django fastapi flake8 flit fractal-roles fractal-specifications fractal-tokens httpx isort mccabe mypy pre-commit pylint pytest pytest-cov pytest-asyncio pytest-lazy-fixture python-dotenv python-jose requests 'sqlalchemy<2.0' tox tox-gh-actions
+	python -m pip install autoflake black coverage django fastapi flake8 flit fractal-repositories fractal-roles fractal-specifications fractal-tokens httpx isort mccabe mypy pre-commit pylint pytest pytest-cov pytest-asyncio pytest-lazy-fixture python-dotenv python-jose requests 'sqlalchemy<2.0' tox tox-gh-actions
 	python -m pip install cryptography
 
 lint:  ## Lint and static-check

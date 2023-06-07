@@ -1,4 +1,4 @@
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
 
 from fractal_specifications.generic.specification import Specification
 
@@ -11,12 +11,12 @@ class IfElseAction(Action):
     def __init__(
         self,
         specification: Specification,
-        process_true: Process,
-        process_false: Optional[Process] = None,
+        actions_true: List[Action],
+        actions_false: Optional[List[Action]] = None,
     ):
         self.specification = specification
-        self.process_true = process_true
-        self.process_false = process_false
+        self.process_true = Process(actions_true)
+        self.process_false = Process(actions_false) if actions_false else None
 
     def execute(self, scope: ProcessScope) -> ProcessScope:
         if self.specification.is_satisfied_by(scope):
@@ -27,9 +27,9 @@ class IfElseAction(Action):
 
 
 class WhileAction(Action):
-    def __init__(self, specification: Specification, process: Process):
+    def __init__(self, specification: Specification, actions: List[Action]):
         self.specification = specification
-        self.process = process
+        self.process = Process(actions)
 
     def execute(self, scope: ProcessScope) -> ProcessScope:
         while self.specification.is_satisfied_by(scope):
@@ -38,9 +38,9 @@ class WhileAction(Action):
 
 
 class ForEachAction(Action):
-    def __init__(self, iterable: Iterable, process: Process):
+    def __init__(self, iterable: Iterable, actions: List[Action]):
         self.iterable = iterable
-        self.process = process
+        self.process = Process(actions)
 
     def execute(self, scope: ProcessScope) -> ProcessScope:
         for item in self.iterable:

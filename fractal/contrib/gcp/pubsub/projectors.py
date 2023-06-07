@@ -1,7 +1,7 @@
 import json
 import logging
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from json import JSONEncoder
 from typing import Optional, Type
 
@@ -47,7 +47,7 @@ class PubSubEventBusProjector(EventProjector):
         # Wrap event in a message
         message = Message(
             id=id,
-            occurred_on=datetime.utcnow(),
+            occurred_on=datetime.now(timezone.utc),
             event=event.__class__.__name__,
             data=json.dumps(asdict(event), cls=self.json_encoder),
             object_id=event.object_id,

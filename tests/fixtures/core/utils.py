@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -63,4 +63,4 @@ def empty_application_context(settings_class):
 
 @pytest.fixture
 def now():
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
