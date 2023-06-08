@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
+from fractal_repositories.core.entity import Model
 from fractal_roles.models import Role, TokenPayloadRolesMixin
 from fractal_roles.services import RolesService as BaseRolesService
 from fractal_tokens.services.dummy import DummyJsonTokenService
@@ -11,7 +12,6 @@ from fractal_tokens.services.generic import TokenService
 from fractal_tokens.services.jwt.automatic import AutomaticJwtTokenService
 
 from fractal import ApplicationContext, Fractal
-from fractal.core.models import Model
 from fractal.core.services import Service
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")

@@ -3,12 +3,13 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 
 import pytest
+from fractal_repositories.core.entity import Entity
 
 
 @pytest.fixture
 def sqlalchemy_test_model(sqlalchemy_test_sub_model):
     @dataclass
-    class TestModel:
+    class TestModel(Entity):
         id: str
         name: str = "test"
         description: str = "test"
@@ -20,7 +21,7 @@ def sqlalchemy_test_model(sqlalchemy_test_sub_model):
 @pytest.fixture
 def sqlalchemy_test_sub_model():
     @dataclass
-    class TestSubModel:
+    class TestSubModel(Entity):
         id: str
         name: str = "test"
         item_id: str = ""
@@ -204,8 +205,8 @@ def sqlalchemy_application_mapper_error(
 def sqlalchemy_test_repository(
     sqlalchemy_test_model, sqlalchemy_test_model_dao, sqlalchemy_application_mapper
 ):
-    from fractal.contrib.sqlalchemy.repositories import SqlAlchemyRepositoryMixin
-    from fractal.core.repositories import Repository
+    from fractal_repositories.contrib.sqlalchemy.mixins import SqlAlchemyRepositoryMixin
+    from fractal_repositories.core.repositories import Repository
 
     class TestRepository(Repository[sqlalchemy_test_model], ABC):
         entity = sqlalchemy_test_model
@@ -226,8 +227,8 @@ def sqlalchemy_test_repository_error(
     sqlalchemy_test_model_dao_error,
     sqlalchemy_application_mapper_error,
 ):
-    from fractal.contrib.sqlalchemy.repositories import SqlAlchemyRepositoryMixin
-    from fractal.core.repositories import Repository
+    from fractal_repositories.contrib.sqlalchemy.mixins import SqlAlchemyRepositoryMixin
+    from fractal_repositories.core.repositories import Repository
 
     class TestRepository(Repository[sqlalchemy_test_model], ABC):
         entity = sqlalchemy_test_model

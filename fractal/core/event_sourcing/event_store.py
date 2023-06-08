@@ -5,14 +5,16 @@ from datetime import datetime, timezone
 from json import JSONEncoder
 from typing import List, Optional, Type
 
+from fractal_repositories.core.repositories import Repository
+from fractal_repositories.mixins.inmemory_repository_mixin import (
+    InMemoryRepositoryMixin,
+)
 from fractal_specifications.generic.specification import Specification
 
 from fractal.core.event_sourcing.event import BasicSendingEvent
 from fractal.core.event_sourcing.event_stream import EventStream
 from fractal.core.event_sourcing.message import Message
 from fractal.core.exceptions import DomainException
-from fractal.core.repositories import Repository
-from fractal.core.repositories.inmemory_repository_mixin import InMemoryRepositoryMixin
 
 
 class EventNotMappedError(DomainException):

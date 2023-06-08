@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 
 import pytest
+from fractal_repositories.core.entity import Entity
 
 
 @dataclass
-class AnObject:
+class AnObject(Entity):
     id: str
     name: str = "default_name"
 
@@ -26,38 +27,40 @@ def yet_another_object():
 
 @pytest.fixture
 def inmemory_repository():
-    from fractal.core.repositories.inmemory_repository_mixin import (
+    from fractal_repositories.mixins.inmemory_repository_mixin import (
         InMemoryRepositoryMixin,
     )
 
     class InMemoryRepository(InMemoryRepositoryMixin[AnObject]):
-        pass
+        entity = AnObject
 
     return InMemoryRepository()
 
 
 @pytest.fixture
 def inmemory_filter_repository():
-    from fractal.core.repositories.filter_repository_mixin import FilterRepositoryMixin
-    from fractal.core.repositories.inmemory_repository_mixin import (
+    from fractal_repositories.mixins.filter_repository_mixin import (
+        FilterRepositoryMixin,
+    )
+    from fractal_repositories.mixins.inmemory_repository_mixin import (
         InMemoryRepositoryMixin,
     )
 
     class InMemoryFilterRepository(
         InMemoryRepositoryMixin[AnObject], FilterRepositoryMixin[AnObject]
     ):
-        pass
+        entity = AnObject
 
     return InMemoryFilterRepository()
 
 
 @pytest.fixture
 def external_data_inmemory_repository():
-    from fractal.core.repositories.external_data_inmemory_repository_mixin import (
+    from fractal_repositories.mixins.external_data_inmemory_repository_mixin import (
         ExternalDataInMemoryRepositoryMixin,
     )
 
     class ExternalDataInMemoryRepository(ExternalDataInMemoryRepositoryMixin[AnObject]):
-        pass
+        entity = AnObject
 
     return ExternalDataInMemoryRepository(AnObject)

@@ -67,11 +67,12 @@ def event_publisher(print_event_projector):
 
 @pytest.fixture
 def inmemory_event_store_repository():
-    from fractal.core.event_sourcing.event_store import EventStoreRepository
-    from fractal.core.event_sourcing.message import Message
-    from fractal.core.repositories.inmemory_repository_mixin import (
+    from fractal_repositories.mixins.inmemory_repository_mixin import (
         InMemoryRepositoryMixin,
     )
+
+    from fractal.core.event_sourcing.event_store import EventStoreRepository
+    from fractal.core.event_sourcing.message import Message
 
     class InMemoryEventStoreRepository(
         EventStoreRepository, InMemoryRepositoryMixin[Message]

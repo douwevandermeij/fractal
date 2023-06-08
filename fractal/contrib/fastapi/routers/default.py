@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Type
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
+from fractal_repositories.core.entity import Model
 from fractal_specifications.generic.specification import Specification
 from fractal_tokens.services.generic import TokenPayload
 from pydantic import BaseModel
@@ -15,7 +16,6 @@ from fractal.contrib.fastapi.routers.tokens import (
     get_payload,
     get_payload_roles,
 )
-from fractal.core.models import Model
 from fractal.core.services import Service
 
 

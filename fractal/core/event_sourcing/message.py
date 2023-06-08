@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from fractal.core.models import Model
+from fractal_repositories.core.entity import Entity
 
 
 @dataclass
-class Message(Model):
+class Message(Entity):
     id: str
     occurred_on: datetime
     event: str

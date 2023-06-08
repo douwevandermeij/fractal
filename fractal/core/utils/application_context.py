@@ -114,7 +114,9 @@ class ApplicationContext(object):
                     name=name,
                 ),
             )
+        self.load_event_store()
 
+    def load_event_store(self):
         if (
             hasattr(self.settings, "EVENT_STORE_BACKEND")
             and self.settings.EVENT_STORE_BACKEND == "firestore"
@@ -124,8 +126,12 @@ class ApplicationContext(object):
             )
             from fractal.core.event_sourcing.event_store import EventStoreRepository
 
+            kwargs = {}
+            if app_name := getattr(self.settings, "APP_NAME"):
+                kwargs["collection_prefix"] = app_name
+
             self.event_store_repository: EventStoreRepository = (
-                FirestoreEventStoreRepository(self.settings)
+                FirestoreEventStoreRepository(**kwargs)
             )
 
             from fractal.contrib.fastapi.utils.json_encoder import (
