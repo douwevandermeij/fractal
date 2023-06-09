@@ -113,15 +113,14 @@ class Contract(BaseModel, ABC):
 class BasicRestRouterService(DefaultRestRouterService):
     def find_entities(
         self,
-        q: str = "",
         *,
         specification: Specification = None,
         **kwargs,
     ):
         return self.ingress_service.find(
             account_id=str(kwargs.get("account")),
-            q=q,
             specification=specification,
+            **kwargs,
         )
 
     def get_entity(
@@ -235,6 +234,9 @@ def inject_default_rest_routes(
     )
     def find_entities(
         q: Optional[str] = "",
+        offset: int = 0,
+        limit: int = 0,
+        sort: str = "",
         payload: TokenPayloadRoles = Depends(
             get_payload_roles(
                 fractal,
@@ -245,6 +247,9 @@ def inject_default_rest_routes(
     ):
         return router_service_class().find_entities(
             q=q,
+            offset=offset,
+            limit=limit,
+            order_by=sort,
             specification=payload.specification,
             **payload.asdict(),
         )
