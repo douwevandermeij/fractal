@@ -38,7 +38,7 @@ def inject_default_routes(fractal: Fractal):
         data = [
             AdapterInfo(
                 adapter=adapter.__class__.__name__,
-                status=False,
+                status_ok=False,
             )
             for adapter in adapters
         ]
