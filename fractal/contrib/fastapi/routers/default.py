@@ -265,7 +265,7 @@ def inject_default_rest_routes(
         payload: TokenPayloadRoles = Depends(
             get_payload_roles(
                 fractal,
-                endpoint=router_service_class().entities_endpoint,
+                endpoint=router_service_class().entity_endpoint,
                 method="get",
             )
         ),
@@ -288,7 +288,7 @@ def inject_default_rest_routes(
         payload: TokenPayloadRoles = Depends(
             get_payload_roles(
                 fractal,
-                endpoint=router_service_class().entities_endpoint,
+                endpoint=router_service_class().entity_endpoint,
                 method="put",
             )
         ),
@@ -311,7 +311,7 @@ def inject_default_rest_routes(
         payload: TokenPayloadRoles = Depends(
             get_payload_roles(
                 fractal,
-                endpoint=router_service_class().entities_endpoint,
+                endpoint=router_service_class().entity_endpoint,
                 method="delete",
             )
         ),
