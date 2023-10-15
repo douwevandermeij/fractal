@@ -148,11 +148,11 @@ class BasicRestRouterService(DefaultRestRouterService):
         except (ValueError, TypeError):
             contract.id = None
         _entity = contract.to_entity(
-            user_id=kwargs.get("sub"), account_id=kwargs.get("account")
+            user_id=kwargs.get("uid"), account_id=kwargs.get("account")
         )
         return self.ingress_service.add(
             entity=_entity,
-            user_id=str(kwargs.get("sub")),
+            user_id=str(kwargs.get("uid")),
             specification=specification,
         )
 
@@ -171,13 +171,13 @@ class BasicRestRouterService(DefaultRestRouterService):
         else:
             _entity = contract.to_entity(
                 id=entity_id,
-                user_id=kwargs.get("sub"),
+                user_id=kwargs.get("uid"),
                 account_id=kwargs.get("account"),
             )
         return self.ingress_service.update(
             entity_id=str(entity_id),
             entity=_entity,
-            user_id=str(kwargs.get("sub")),
+            user_id=str(kwargs.get("uid")),
             specification=specification,
         )
 
@@ -190,7 +190,7 @@ class BasicRestRouterService(DefaultRestRouterService):
     ) -> Dict:
         self.ingress_service.delete(
             entity_id=str(entity_id),
-            user_id=str(kwargs.get("sub")),
+            user_id=str(kwargs.get("uid")),
             account_id=str(kwargs.get("account")),
             specification=specification,
         )
