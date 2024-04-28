@@ -19,7 +19,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 @dataclass
 class TokenPayload(Model, BaseTokenPayload):
-    ...
+    pass
 
 
 @dataclass

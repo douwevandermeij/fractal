@@ -25,9 +25,11 @@ def inject_default_routes(fractal: Fractal):
     @router.get(Routes.ROOT)
     def read_root():
         return {
-            "FastAPI": fractal.settings.APP_NAME
-            if fractal.settings and hasattr(fractal.settings, "APP_NAME")
-            else "Fractal Service",
+            "FastAPI": (
+                fractal.settings.APP_NAME
+                if fractal.settings and hasattr(fractal.settings, "APP_NAME")
+                else "Fractal Service"
+            ),
         }
 
     @router.get(Routes.INFO, responses={200: {"model": Info}})

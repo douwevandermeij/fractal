@@ -7,9 +7,8 @@ coverage:  ## Run tests with coverage
 	pytest --cov fractal --cov-report=xml
 
 deps:  ## Install dependencies
-	python -m pip install --upgrade pip
-	python -m pip install autoflake black coverage django fastapi flake8 flit fractal-repositories fractal-roles fractal-specifications fractal-tokens httpx isort mccabe mypy pre-commit pylint pytest pytest-cov pytest-asyncio pytest-lazy-fixture python-dotenv python-jose requests 'sqlalchemy<2.0' tox tox-gh-actions
-	python -m pip install cryptography
+	python -m pip install -U pip
+	python -m pip install -U autoflake black coverage cryptography django fastapi flake8 flit fractal-repositories fractal-roles fractal-specifications fractal-tokens httpx isort mccabe mypy pre-commit pylint 'pytest<7' pytest-cov pytest-asyncio pytest-lazy-fixture python-dotenv python-jose requests 'sqlalchemy<2.0' tox tox-gh-actions
 
 lint:  ## Lint and static-check
 	pre-commit run --all-files

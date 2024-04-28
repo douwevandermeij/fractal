@@ -22,10 +22,12 @@ def install_fastapi(settings: Settings):
         title=getattr(settings, "APP_NAME", "Fractal service"),
         version=getattr(settings, "APP_VERSION", "0.1.0"),
         root_path=getattr(settings, "OPENAPI_PREFIX_PATH", ""),
-        openapi_url="/openapi.json"
-        if str(getattr(settings, "APIDOCS_ENABLED", "true")).lower()
-        in ["1", "yes", "true"]
-        else None,
+        openapi_url=(
+            "/openapi.json"
+            if str(getattr(settings, "APIDOCS_ENABLED", "true")).lower()
+            in ["1", "yes", "true"]
+            else None
+        ),
     )
 
     app.add_middleware(
@@ -38,7 +40,12 @@ def install_fastapi(settings: Settings):
 
     if sentry:
         if sentry_dsn := getattr(settings, "SENTRY_DSN", ""):
-            sentry_sdk.init(dsn=sentry_dsn)
+            sentry_sdk.init(
+                dsn=sentry_dsn,
+                traces_sample_rate=getattr(settings, "SENTRY_TRACES_SAMPLE_RATE", 0.1),
+                send_default_pii=True,
+                enable_tracing=True,
+            )
 
     @app.exception_handler(DomainException)
     def unicorn_domain_exception_handler(request: Request, exc: DomainException):
@@ -48,8 +55,8 @@ def install_fastapi(settings: Settings):
         else:
             logger.error(f"{exc.code} - {exc.message}")
 
-        if sentry:
-            sentry_sdk.capture_exception(exc)
+        # if sentry:
+        #     sentry_sdk.capture_exception(exc)
 
         return JSONResponse(
             status_code=exc.status_code,
@@ -64,8 +71,8 @@ def install_fastapi(settings: Settings):
     def unicorn_exception_handler(request: Request, exc: Exception):
         logging.error(exc)
 
-        if sentry:
-            sentry_sdk.capture_exception(exc)
+        # if sentry:
+        #     sentry_sdk.capture_exception(exc)
 
         return JSONResponse(
             status_code=500,

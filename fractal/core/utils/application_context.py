@@ -94,9 +94,11 @@ class ApplicationContext(object):
         """Load services for internal use of the domain."""
         for name, service in self.registered_internal_services:
             _service = self.install_service(
-                service(self.settings)
-                if isinstance(service, FunctionType)
-                else service,
+                (
+                    service(self.settings)
+                    if isinstance(service, FunctionType)
+                    else service
+                ),
                 name=name,
             )
             setattr(self, name, _service())
@@ -108,9 +110,11 @@ class ApplicationContext(object):
                 self,
                 name,
                 self.install_repository(
-                    repository(self.settings)
-                    if isinstance(repository, FunctionType)
-                    else repository,
+                    (
+                        repository(self.settings)
+                        if isinstance(repository, FunctionType)
+                        else repository
+                    ),
                     name=name,
                 ),
             )
@@ -172,9 +176,11 @@ class ApplicationContext(object):
         """Load services to external interfaces that are initiated by this service (outbound)"""
         for name, service in self.registered_egress_services:
             _service = self.install_service(
-                service(self.settings)
-                if isinstance(service, FunctionType)
-                else service,
+                (
+                    service(self.settings)
+                    if isinstance(service, FunctionType)
+                    else service
+                ),
                 name=name,
             )
             setattr(self, name, _service())
@@ -238,9 +244,11 @@ class ApplicationContext(object):
         """Load services to external interfaces that are initiated by the external services (inbound)"""
         for name, service in self.registered_ingress_services:
             _service = self.install_service(
-                service(self.settings)
-                if isinstance(service, FunctionType)
-                else service,
+                (
+                    service(self.settings)
+                    if isinstance(service, FunctionType)
+                    else service
+                ),
                 name=name,
             )
             setattr(self, name, _service())
