@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 from fractal_repositories.core.entity import Model
+from fractal_repositories.exceptions import ObjectNotFoundException
 from fractal_specifications.generic.specification import Specification
 from fractal_tokens.services.generic import TokenPayload
 from pydantic import BaseModel
@@ -166,7 +167,11 @@ class BasicRestRouterService(DefaultRestRouterService):
         specification: Specification = None,
         **kwargs,
     ):
-        if _entity := self.get_entity(entity_id, specification=specification, **kwargs):
+        try:
+            _entity = self.get_entity(entity_id, specification=specification, **kwargs)
+        except ObjectNotFoundException:
+            _entity = None
+        if _entity:
             _entity = _entity.update(
                 {
                     k: v
@@ -180,6 +185,13 @@ class BasicRestRouterService(DefaultRestRouterService):
                 user_id=kwargs.get("uid"),
                 account_id=kwargs.get("account"),
             )
+        _entity = _entity.update(
+            {
+                k: v
+                for k, v in contract.dict().items()
+                if (contract.model_fields[k].is_required() and v) or True
+            }
+        )
         return self.ingress_service.update(
             entity_id=str(entity_id),
             entity=_entity,
