@@ -28,6 +28,7 @@ def install_fastapi(settings: Settings):
             in ["1", "yes", "true"]
             else None
         ),
+        openapi_tags=getattr(settings, "OPENAPI_TAGS", []),
     )
 
     app.add_middleware(
