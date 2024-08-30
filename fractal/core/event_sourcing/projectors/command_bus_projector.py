@@ -25,4 +25,8 @@ class CommandBusProjector(EventProjector):
             self.command_bus_func().handle(event.to_command())
         elif event.__class__ in self.mappers:
             for mapper in self.mappers[event.__class__]:
-                self.command_bus_func().handle(mapper(event))
+                commands = mapper(event)
+                if commands != list:  # backwards compatibility
+                    commands = [commands]
+                for command in commands:
+                    self.command_bus_func().handle(command)

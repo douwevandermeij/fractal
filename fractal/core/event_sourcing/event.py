@@ -45,5 +45,5 @@ class ReceivingEvent(Event):
 
 class EventCommandMapper(ABC):
     @abstractmethod
-    def mappers(self) -> Dict[Type[Event], List[Callable[[Event], Command]]]:
+    def mappers(self) -> Dict[Type[Event], List[Callable[[Event], List[Command]]]]:
         raise NotImplementedError
