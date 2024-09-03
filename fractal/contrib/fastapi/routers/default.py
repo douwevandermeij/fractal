@@ -58,6 +58,7 @@ def inject_default_routes(fractal: Fractal):
 
 class DefaultRestRouterService(Service, ABC):
     domain_entity_class: Type[Model]
+    domain_read_model_class: Type[Model] = None
     entities_route: str
     entity_route: str
     entities_endpoint: str
@@ -246,7 +247,10 @@ def inject_default_rest_routes(
 
     @router.get(
         router_service_class().entities_route,
-        response_model=List[router_service_class().domain_entity_class],
+        response_model=List[
+            router_service_class().domain_entity_class
+            | router_service_class().domain_read_model_class
+        ],
         status_code=status.HTTP_200_OK,
         name=f"Find {router_service_class().domain_entity_class.__name__} entities",
     )
