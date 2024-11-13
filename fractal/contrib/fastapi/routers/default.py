@@ -138,6 +138,7 @@ class BasicRestRouterService(DefaultRestRouterService):
             entity_id=str(entity_id),
             account_id=str(kwargs.get("account")),
             specification=specification,
+            **kwargs,
         )
 
     def add_entity(
@@ -291,11 +292,13 @@ def inject_default_rest_routes(
                 method="get",
             )
         ),
+        refresh: bool = False,
     ):
         return router_service_class().get_entity(
             entity_id=entity_id,
             specification=payload.specification,
             **payload.asdict(),
+            refresh=refresh,
         )
 
     @router.put(
