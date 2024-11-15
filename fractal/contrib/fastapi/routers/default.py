@@ -159,6 +159,7 @@ class BasicRestRouterService(DefaultRestRouterService):
             entity=_entity,
             user_id=str(kwargs.get("uid")),
             specification=specification,
+            **kwargs,
         )
 
     def update_entity(
@@ -199,6 +200,7 @@ class BasicRestRouterService(DefaultRestRouterService):
             entity=_entity,
             user_id=str(kwargs.get("uid")),
             specification=specification,
+            **kwargs,
         )
 
     def delete_entity(
@@ -213,6 +215,7 @@ class BasicRestRouterService(DefaultRestRouterService):
             user_id=str(kwargs.get("uid")),
             account_id=str(kwargs.get("account")),
             specification=specification,
+            **kwargs,
         )
         return {}
 
