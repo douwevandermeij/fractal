@@ -8,6 +8,8 @@ class EnhancedEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, datetime.datetime):
             return o.isoformat()
+        elif isinstance(o, datetime.date):
+            return o.isoformat()
         elif isinstance(o, datetime.time):
             return o.isoformat()
         elif isinstance(o, set):
