@@ -46,5 +46,8 @@ class EventSourcedRepository(Generic[EntityType], Repository[Entity]):
     def find(*args, **kwargs) -> Generator[Entity, None, None]:
         raise NotImplementedError
 
+    def count(self, specification: Optional[Specification] = None) -> int:
+        raise NotImplementedError
+
     def is_healthy(self) -> bool:
         return self.event_store.is_healthy()
