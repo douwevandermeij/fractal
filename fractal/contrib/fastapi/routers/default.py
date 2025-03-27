@@ -254,7 +254,8 @@ def inject_default_rest_routes(
         response_model=List[
             router_service_class().domain_entity_class
             | router_service_class().domain_read_model_class
-        ],
+        ]
+        | Dict,
         status_code=status.HTTP_200_OK,
         name=f"Find {router_service_class().domain_entity_class.__name__} entities",
     )
