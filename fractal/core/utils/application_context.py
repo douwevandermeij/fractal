@@ -213,15 +213,18 @@ class ApplicationContext(object):
 
             projectors.append(PrintEventProjector())
 
-        if gcp_project_id := getattr(self.settings, "GCP_PROJECT_ID", None):
-            from fractal.contrib.gcp.pubsub.projectors import PubSubEventBusProjector
+        if getattr(self.settings, "PUBSUB_PROJECTOR", True):
+            if gcp_project_id := getattr(self.settings, "GCP_PROJECT_ID", None):
+                from fractal.contrib.gcp.pubsub.projectors import (
+                    PubSubEventBusProjector,
+                )
 
-            projectors.append(
-                PubSubEventBusProjector(
-                    project_id=gcp_project_id,
-                    topic=getattr(self.settings, "GCP_PUBSUB_TOPIC", ""),
-                ),
-            )
+                projectors.append(
+                    PubSubEventBusProjector(
+                        project_id=gcp_project_id,
+                        topic=getattr(self.settings, "GCP_PUBSUB_TOPIC", ""),
+                    ),
+                )
 
         # First process all notifiers/emitters/persistency before chaining commands (and projecting new events)
         self.command_bus_projector = CommandBusProjector(
