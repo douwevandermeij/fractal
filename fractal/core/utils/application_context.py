@@ -191,7 +191,10 @@ class ApplicationContext(object):
         self.event_publisher = EventPublisher(self.load_event_projectors())
 
     def load_event_projectors(self):
-        from fractal.core.event_sourcing.event import EventCommandMapper
+        from fractal.core.event_sourcing.event import (
+            EventCommandMapper,
+            EventProcessMapper,
+        )
         from fractal.core.event_sourcing.projectors.command_bus_projector import (
             CommandBusProjector,
         )
@@ -230,6 +233,7 @@ class ApplicationContext(object):
         self.command_bus_projector = CommandBusProjector(
             lambda: self.command_bus,
             all_subclasses(EventCommandMapper),
+            all_subclasses(EventProcessMapper),
         )
         projectors.append(self.command_bus_projector)
 
