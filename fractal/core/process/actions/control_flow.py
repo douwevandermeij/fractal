@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional
+from typing import Callable, Iterable, List, Optional, Union
 
 from fractal_specifications.generic.specification import Specification
 
@@ -38,14 +38,61 @@ class WhileAction(Action):
 
 
 class ForEachAction(Action):
-    def __init__(self, iterable: Iterable, actions: List[Action]):
+    """Execute actions for each item in an iterable.
+
+    Supports both static iterables and dynamic lookup from context.
+
+    Examples:
+        # Static iterable
+        ForEachAction([1, 2, 3], [PrintValueAction(field="item")])
+
+        # Dynamic lookup from context field
+        ForEachAction("entities", [ProcessEntityAction()])
+
+        # Dynamic callable
+        ForEachAction(
+            lambda ctx: ctx.fractal.context.user_repository.find_all(),
+            [NotifyUserAction()]
+        )
+    """
+
+    def __init__(
+        self,
+        iterable: Union[Iterable, str, Callable[[ProcessContext], Iterable]],
+        actions: List[Action],
+        item_field: str = "item",
+    ):
+        """Initialize ForEachAction.
+
+        Args:
+            iterable: Can be:
+                - Static iterable (list, tuple, etc.)
+                - String field name to lookup in context
+                - Callable that takes context and returns iterable
+            actions: Actions to execute for each item
+            item_field: Field name to store current item (default: "item")
+        """
         self.iterable = iterable
         self.process = Process(actions)
+        self.item_field = item_field
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        for item in self.iterable:
-            ctx["item"] = item
+        # Resolve iterable based on type
+        if isinstance(self.iterable, str):
+            # Lookup from context field
+            items = ctx[self.iterable]
+        elif callable(self.iterable):
+            # Call function to get iterable
+            items = self.iterable(ctx)
+        else:
+            # Use as-is (static iterable)
+            items = self.iterable
+
+        # Execute actions for each item
+        for item in items:
+            ctx[self.item_field] = item
             ctx.update(self.process.run(ctx))
+
         return ctx
 
 
@@ -81,6 +128,54 @@ class TryExceptAction(Action):
             if self.finally_process:
                 ctx.update(self.finally_process.run(ctx))
         return ctx
+
+
+class SubProcessAction(Action):
+    """Execute a sub-process as an action.
+
+    Allows composing processes by calling one process from within another.
+    The sub-process shares the same context as the parent.
+
+    Example:
+        # Define reusable sub-processes
+        validate_user = Process([
+            QueryAction(lambda ctx: ctx.fractal.context.user_repository.get(ctx["user_id"]), "user"),
+            IfElseAction(
+                specification=has_field("user"),
+                actions_true=[SetValueAction(user_valid=True)],
+                actions_false=[SetValueAction(user_valid=False)]
+            )
+        ])
+
+        # Use in parent process
+        Process([
+            SetValueAction(user_id="123"),
+            SubProcessAction(validate_user),
+            IfElseAction(
+                specification=field_equals("user_valid", True),
+                actions_true=[...]
+            )
+        ])
+    """
+
+    def __init__(self, process: "Process"):
+        """Initialize SubProcessAction.
+
+        Args:
+            process: Process to execute as a sub-process
+        """
+        self.process = process
+
+    def execute(self, ctx: ProcessContext) -> ProcessContext:
+        """Execute the sub-process.
+
+        Args:
+            ctx: ProcessContext from parent process
+
+        Returns:
+            Updated ProcessContext after sub-process execution
+        """
+        return self.process.run(ctx)
 
 
 class ParallelAction(Action):
