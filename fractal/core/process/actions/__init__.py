@@ -6,12 +6,145 @@ from fractal.core.process.action import Action
 from fractal.core.process.process_context import ProcessContext
 
 
-class SetValueAction(Action):
+def _get_nested_value(ctx, field: str):
+    """Get nested field value using dot notation.
+
+    Args:
+        ctx: ProcessContext or object to navigate
+        field: Field name, can use dot notation for nested access (e.g., "user.email")
+
+    Returns:
+        Field value
+
+    Raises:
+        KeyError: If field is not found or is None during navigation
+    """
+    value = ctx
+    for part in field.split("."):
+        if hasattr(value, "get"):
+            value = value.get(part)
+        elif hasattr(value, part):
+            value = getattr(value, part)
+        else:
+            raise KeyError(f"Field '{field}' not found in context")
+        if value is None:
+            raise KeyError(f"Field '{field}' is None")
+    return value
+
+
+class SetContextVariableAction(Action):
+    """Set context variables (top-level keys in the context).
+
+    Example:
+        SetContextVariableAction(user_name="Alice", user_age=30)
+        # Results in: ctx["user_name"] = "Alice", ctx["user_age"] = 30
+    """
+
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         return ctx.update(ProcessContext(self.kwargs))
+
+
+class SetValueAction(Action):
+    """Set a nested field in a context variable to a value from another context variable.
+
+    Both target and source support dot notation.
+
+    Example:
+        # Set user.name from context variable user_name
+        SetValueAction(target="user.name", source="user_name")
+
+        # Set user.address.city from another nested field
+        SetValueAction(target="user.address.city", source="company.location.city")
+    """
+
+    def __init__(self, *, target: str, source: str):
+        """
+        Args:
+            target: Target field to set (supports dot notation, e.g., "user.name")
+            source: Source context variable to read from (supports dot notation, e.g., "user_name")
+        """
+        self.target = target
+        self.source = source
+
+    def execute(self, ctx: ProcessContext) -> ProcessContext:
+        # Get the source value from context
+        source_value = _get_nested_value(ctx, self.source)
+
+        # Set the target field
+        self._set_nested(ctx, self.target, source_value)
+
+        return ctx
+
+    @staticmethod
+    def _set_nested(ctx, field: str, value):
+        """Set nested field value using dot notation."""
+        parts = field.split(".")
+
+        if len(parts) == 1:
+            # Simple field - set directly in context
+            ctx[field] = value
+            return
+
+        # Navigate to the parent object
+        parent = ctx
+        path_so_far = []
+        for part in parts[:-1]:
+            path_so_far.append(part)
+            if hasattr(parent, "get"):
+                parent = parent.get(part)
+            elif hasattr(parent, part):
+                parent = getattr(parent, part)
+            else:
+                raise KeyError(f"Cannot navigate to '{'.'.join(path_so_far)}'")
+
+            # Check if we got None during navigation
+            if parent is None:
+                raise KeyError(f"Field '{'.'.join(path_so_far)}' is None")
+
+        # Set the final field
+        final_field = parts[-1]
+        if hasattr(parent, "__setitem__"):
+            parent[final_field] = value
+        elif hasattr(parent, final_field):
+            setattr(parent, final_field, value)
+        else:
+            raise AttributeError(f"Cannot set field '{final_field}' on object")
+
+
+class GetValueAction(Action):
+    """Get a nested field from context and store it in a context variable.
+
+    This is the inverse of SetValueAction - it extracts values from objects
+    into top-level context variables.
+
+    Example:
+        # Extract user.email into context variable user_email
+        GetValueAction(target="user_email", source="user.email")
+
+        # Extract nested field
+        GetValueAction(target="city", source="company.address.city")
+    """
+
+    def __init__(self, *, target: str, source: str):
+        """
+        Args:
+            target: Context variable name to store the value (simple name, no dots)
+            source: Source field to read from (supports dot notation, e.g., "user.email")
+        """
+        self.target = target
+        self.source = source
+
+    def execute(self, ctx: ProcessContext) -> ProcessContext:
+        # Get the source value (supports dot notation)
+        source_value = _get_nested_value(ctx, self.source)
+
+        # Set the target (simple context variable)
+        ctx[self.target] = source_value
+
+        return ctx
 
 
 class ApplyToValueAction(Action):

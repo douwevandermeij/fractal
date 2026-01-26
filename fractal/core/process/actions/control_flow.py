@@ -142,14 +142,14 @@ class SubProcessAction(Action):
             QueryAction(lambda ctx: ctx.fractal.context.user_repository.get(ctx["user_id"]), "user"),
             IfElseAction(
                 specification=has_field("user"),
-                actions_true=[SetValueAction(user_valid=True)],
-                actions_false=[SetValueAction(user_valid=False)]
+                actions_true=[SetContextVariableAction(user_valid=True)],
+                actions_false=[SetContextVariableAction(user_valid=False)]
             )
         ])
 
         # Use in parent process
         Process([
-            SetValueAction(user_id="123"),
+            SetContextVariableAction(user_id="123"),
             SubProcessAction(validate_user),
             IfElseAction(
                 specification=field_equals("user_valid", True),

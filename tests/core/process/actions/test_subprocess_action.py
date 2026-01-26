@@ -2,7 +2,7 @@
 
 import pytest
 
-from fractal.core.process.actions import SetValueAction
+from fractal.core.process.actions import SetContextVariableAction
 from fractal.core.process.actions.control_flow import IfElseAction, SubProcessAction
 from fractal.core.process.process import Process
 from fractal.core.process.process_context import ProcessContext
@@ -11,7 +11,7 @@ from fractal.core.process.specifications import field_equals
 
 def test_subprocess_executes_process():
     """Test SubProcessAction executes a sub-process."""
-    sub_process = Process([SetValueAction(sub_result="from_subprocess")])
+    sub_process = Process([SetContextVariableAction(sub_result="from_subprocess")])
 
     action = SubProcessAction(sub_process)
     ctx = ProcessContext({"initial": "data"})
@@ -25,7 +25,7 @@ def test_subprocess_shares_context():
     """Test sub-process shares context with parent."""
     sub_process = Process(
         [
-            SetValueAction(modified=True),
+            SetContextVariableAction(modified=True),
         ]
     )
 
@@ -40,16 +40,18 @@ def test_subprocess_shares_context():
 
 def test_subprocess_composition():
     """Test composing multiple sub-processes."""
-    validate_user = Process([SetValueAction(user_validated=True)])
+    validate_user = Process([SetContextVariableAction(user_validated=True)])
 
-    fetch_permissions = Process([SetValueAction(permissions=["read", "write"])])
+    fetch_permissions = Process(
+        [SetContextVariableAction(permissions=["read", "write"])]
+    )
 
     main_process = Process(
         [
-            SetValueAction(user_id="123"),
+            SetContextVariableAction(user_id="123"),
             SubProcessAction(validate_user),
             SubProcessAction(fetch_permissions),
-            SetValueAction(ready=True),
+            SetContextVariableAction(ready=True),
         ]
     )
 
@@ -64,12 +66,15 @@ def test_subprocess_composition():
 def test_subprocess_with_conditional():
     """Test sub-process used in conditional logic."""
     expensive_validation = Process(
-        [SetValueAction(validation_performed=True), SetValueAction(is_valid=True)]
+        [
+            SetContextVariableAction(validation_performed=True),
+            SetContextVariableAction(is_valid=True),
+        ]
     )
 
     main_process = Process(
         [
-            SetValueAction(needs_validation=True),
+            SetContextVariableAction(needs_validation=True),
             IfElseAction(
                 specification=field_equals("needs_validation", True),
                 actions_true=[SubProcessAction(expensive_validation)],
@@ -85,11 +90,13 @@ def test_subprocess_with_conditional():
 
 def test_nested_subprocesses():
     """Test nested sub-processes (sub-process calling sub-process)."""
-    innermost = Process([SetValueAction(level="innermost")])
+    innermost = Process([SetContextVariableAction(level="innermost")])
 
-    middle = Process([SetValueAction(level="middle"), SubProcessAction(innermost)])
+    middle = Process(
+        [SetContextVariableAction(level="middle"), SubProcessAction(innermost)]
+    )
 
-    outer = Process([SetValueAction(level="outer"), SubProcessAction(middle)])
+    outer = Process([SetContextVariableAction(level="outer"), SubProcessAction(middle)])
 
     result = outer.run()
 
@@ -99,17 +106,17 @@ def test_nested_subprocesses():
 
 def test_subprocess_reusability():
     """Test that sub-process can be reused in multiple places."""
-    validate = Process([SetValueAction(validated=True)])
+    validate = Process([SetContextVariableAction(validated=True)])
 
     # Use same sub-process twice
     main = Process(
         [
-            SetValueAction(validated=False),
+            SetContextVariableAction(validated=False),
             SubProcessAction(validate),
-            SetValueAction(first_validation_done=True),
-            SetValueAction(validated=False),  # Reset
+            SetContextVariableAction(first_validation_done=True),
+            SetContextVariableAction(validated=False),  # Reset
             SubProcessAction(validate),  # Validate again
-            SetValueAction(second_validation_done=True),
+            SetContextVariableAction(second_validation_done=True),
         ]
     )
 
@@ -131,9 +138,9 @@ def test_subprocess_with_error_propagation():
 
     main = Process(
         [
-            SetValueAction(started=True),
+            SetContextVariableAction(started=True),
             SubProcessAction(failing_subprocess),
-            SetValueAction(completed=True),  # Should not reach
+            SetContextVariableAction(completed=True),  # Should not reach
         ]
     )
 
@@ -151,16 +158,19 @@ def test_subprocess_as_reusable_workflow():
     """Test sub-process as a reusable workflow pattern."""
     # Reusable workflow: Fetch entity and validate
     fetch_and_validate = Process(
-        [SetValueAction(fetched=True), SetValueAction(validated=True)]
+        [
+            SetContextVariableAction(fetched=True),
+            SetContextVariableAction(validated=True),
+        ]
     )
 
     # Use in multiple parent workflows
     workflow_a = Process(
-        [SetValueAction(workflow="A"), SubProcessAction(fetch_and_validate)]
+        [SetContextVariableAction(workflow="A"), SubProcessAction(fetch_and_validate)]
     )
 
     workflow_b = Process(
-        [SetValueAction(workflow="B"), SubProcessAction(fetch_and_validate)]
+        [SetContextVariableAction(workflow="B"), SubProcessAction(fetch_and_validate)]
     )
 
     result_a = workflow_a.run()
@@ -181,16 +191,22 @@ def test_subprocess_factory_pattern():
     def create_validation_process(strict: bool) -> Process:
         if strict:
             return Process(
-                [SetValueAction(strict_mode=True), SetValueAction(validated=True)]
+                [
+                    SetContextVariableAction(strict_mode=True),
+                    SetContextVariableAction(validated=True),
+                ]
             )
         else:
             return Process(
-                [SetValueAction(strict_mode=False), SetValueAction(validated=True)]
+                [
+                    SetContextVariableAction(strict_mode=False),
+                    SetContextVariableAction(validated=True),
+                ]
             )
 
     main = Process(
         [
-            SetValueAction(use_strict=True),
+            SetContextVariableAction(use_strict=True),
             SubProcessAction(create_validation_process(strict=True)),
         ]
     )

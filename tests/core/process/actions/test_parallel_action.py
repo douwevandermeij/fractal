@@ -2,7 +2,7 @@
 
 import time
 
-from fractal.core.process.actions import QueryAction, SetValueAction
+from fractal.core.process.actions import QueryAction, SetContextVariableAction
 from fractal.core.process.actions.control_flow import ParallelAction
 from fractal.core.process.process_context import ProcessContext
 
@@ -49,9 +49,9 @@ def test_parallel_action_merges_scopes():
     """Test that results from parallel actions are merged into main scope."""
     action = ParallelAction(
         [
-            SetValueAction(key1="value1"),
-            SetValueAction(key2="value2"),
-            SetValueAction(key3="value3"),
+            SetContextVariableAction(key1="value1"),
+            SetContextVariableAction(key2="value2"),
+            SetContextVariableAction(key3="value3"),
         ]
     )
 
@@ -110,7 +110,7 @@ def test_parallel_action_preserves_original_scope():
     """Test that original scope values are preserved."""
     action = ParallelAction(
         [
-            SetValueAction(new_key="new_value"),
+            SetContextVariableAction(new_key="new_value"),
             QueryAction(lambda s: s["original"] + "_modified", "modified"),
         ]
     )

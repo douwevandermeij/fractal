@@ -215,3 +215,38 @@ def field_contains(field: str, substring: str) -> Specification:
     return CallableSpecification(
         lambda s: substring in str(_get_nested(s, field) or "")
     )
+
+
+def on_field(field: str, specification: Specification) -> Specification:
+    """Apply an entity specification to a field in the ProcessContext.
+
+    This separates field selection from specification logic, allowing you to
+    reuse entity specifications from your domain with ProcessContext.
+
+    Example:
+        # Define entity specification (reusable across your domain)
+        from fractal_specifications.generic.specification import field_equals
+        house_is_active = field_equals("status", "active")
+
+        # Apply to context field
+        IfElseAction(
+            specification=on_field("house", house_is_active),
+            actions_true=[...]
+        )
+
+        # Compose with other context checks
+        on_field("house", house_is_active) & has_field("user")
+
+    Args:
+        field: Field name in ProcessContext (supports dot notation)
+        specification: Entity specification to apply to the field value
+
+    Returns:
+        Specification that extracts field from context and applies entity spec
+    """
+    return CallableSpecification(
+        lambda ctx: (
+            (entity := _get_nested(ctx, field)) is not None
+            and specification.is_satisfied_by(entity)
+        )
+    )

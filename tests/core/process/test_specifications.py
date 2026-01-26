@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from fractal.core.process.process_context import ProcessContext
 from fractal.core.process.specifications import (
+    CallableSpecification,
     field_contains,
     field_equals,
     field_gt,
@@ -12,6 +13,7 @@ from fractal.core.process.specifications import (
     field_lt,
     field_lte,
     has_field,
+    on_field,
 )
 
 
@@ -230,14 +232,14 @@ def test_specification_composition_complex():
 
 def test_specification_with_ifelse_action():
     """Test using specifications with IfElseAction."""
-    from fractal.core.process.actions import SetValueAction
+    from fractal.core.process.actions import SetContextVariableAction
     from fractal.core.process.actions.control_flow import IfElseAction
 
     spec = has_field("house") & field_equals("house.status", "active")
     action = IfElseAction(
         specification=spec,
-        actions_true=[SetValueAction(result="house is active")],
-        actions_false=[SetValueAction(result="house not active")],
+        actions_true=[SetContextVariableAction(result="house is active")],
+        actions_false=[SetContextVariableAction(result="house not active")],
     )
 
     house1 = House(status="active", price=100000)
@@ -281,3 +283,98 @@ def test_missing_nested_field_returns_none():
     assert spec.is_satisfied_by(scope1) is False
     assert spec.is_satisfied_by(scope2) is False
     assert spec.is_satisfied_by(scope3) is False
+
+
+def test_on_field_with_entity_spec():
+    """Test on_field applies entity specification to context field."""
+    # Define entity specification (checks entity directly, not context)
+    entity_spec = CallableSpecification(lambda house: house.status == "active")
+
+    # Apply to context field
+    context_spec = on_field("house", entity_spec)
+
+    house1 = House(status="active", price=100000)
+    house2 = House(status="inactive", price=100000)
+
+    ctx1 = ProcessContext({"house": house1})
+    ctx2 = ProcessContext({"house": house2})
+    ctx3 = ProcessContext({"other": "value"})
+
+    assert context_spec.is_satisfied_by(ctx1) is True
+    assert context_spec.is_satisfied_by(ctx2) is False
+    assert context_spec.is_satisfied_by(ctx3) is False  # Missing field
+
+
+def test_on_field_with_fractal_specifications():
+    """Test on_field works with fractal-specifications."""
+    from fractal_specifications.generic.specification import Specification
+
+    # Entity spec using fractal-specifications (domain-level)
+    class HouseIsActiveSpec(Specification):
+        def is_satisfied_by(self, house):
+            return house.status == "active"
+
+        def to_collection(self):
+            return {"status": "active"}
+
+    # Apply to context field
+    context_spec = on_field("house", HouseIsActiveSpec())
+
+    house1 = House(status="active", price=100000)
+    house2 = House(status="inactive", price=100000)
+
+    ctx1 = ProcessContext({"house": house1})
+    ctx2 = ProcessContext({"house": house2})
+
+    assert context_spec.is_satisfied_by(ctx1) is True
+    assert context_spec.is_satisfied_by(ctx2) is False
+
+
+def test_on_field_composition():
+    """Test on_field composes with other context specifications."""
+    entity_spec = CallableSpecification(lambda house: house.price > 50000)
+
+    composed_spec = on_field("house", entity_spec) & has_field("user")
+
+    house = House(status="active", price=100000)
+
+    ctx1 = ProcessContext({"house": house, "user": "Alice"})
+    ctx2 = ProcessContext({"house": house})  # Missing user
+    ctx3 = ProcessContext({"user": "Alice"})  # Missing house
+
+    assert composed_spec.is_satisfied_by(ctx1) is True
+    assert composed_spec.is_satisfied_by(ctx2) is False
+    assert composed_spec.is_satisfied_by(ctx3) is False
+
+
+def test_on_field_nested_field():
+    """Test on_field with nested field paths."""
+    entity_spec = CallableSpecification(lambda addr: "Main" in addr)
+
+    spec = on_field("house.address", entity_spec)
+
+    house = House(status="active", price=100000, address="123 Main St")
+    ctx1 = ProcessContext({"house": house})
+    ctx2 = ProcessContext(
+        {"house": House(status="active", price=100000, address="Oak Ave")}
+    )
+
+    assert spec.is_satisfied_by(ctx1) is True
+    assert spec.is_satisfied_by(ctx2) is False
+
+
+def test_on_field_vs_field_equals():
+    """Test difference between on_field and field_equals approaches."""
+    house = House(status="active", price=100000)
+    ctx = ProcessContext({"house": house})
+
+    # Approach 1: field_equals (checks context with field path)
+    context_spec = field_equals("house.status", "active")
+    assert context_spec.is_satisfied_by(ctx) is True
+
+    # Approach 2: on_field (applies entity spec to field)
+    entity_spec = CallableSpecification(lambda h: h.status == "active")
+    separated_spec = on_field("house", entity_spec)
+    assert separated_spec.is_satisfied_by(ctx) is True
+
+    # Both work, but on_field separates concerns and allows reusing entity specs

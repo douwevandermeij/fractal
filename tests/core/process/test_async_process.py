@@ -8,7 +8,7 @@ from fractal.core.process.action import AsyncAction
 from fractal.core.process.actions import (
     AsyncCommandAction,
     AsyncQueryAction,
-    SetValueAction,
+    SetContextVariableAction,
 )
 from fractal.core.process.process import AsyncProcess
 from fractal.core.process.process_context import ProcessContext
@@ -45,7 +45,7 @@ async def test_async_process_with_mixed_actions():
     """Test AsyncProcess with both sync and async actions."""
     process = AsyncProcess(
         [
-            SetValueAction(sync_value="sync"),
+            SetContextVariableAction(sync_value="sync"),
             CustomAsyncAction("async"),
         ]
     )
@@ -60,16 +60,16 @@ async def test_async_process_preserves_order():
     """Test that actions execute in order."""
     process = AsyncProcess(
         [
-            SetValueAction(step="1"),
+            SetContextVariableAction(step="1"),
             CustomAsyncAction("2", delay=0.05),
-            SetValueAction(step="3"),
+            SetContextVariableAction(step="3"),
             CustomAsyncAction("4", delay=0.05),
         ]
     )
 
     scope = await process.run_async()
     # Each action should see previous results
-    assert scope["step"] == "3"  # Last SetValueAction overwrites
+    assert scope["step"] == "3"  # Last SetContextVariableAction overwrites
     assert scope["async_result"] == "4"  # Last async action result
 
 
@@ -136,7 +136,7 @@ def test_async_process_sync_wrapper():
     process = AsyncProcess(
         [
             CustomAsyncAction("test_value"),
-            SetValueAction(sync_value="sync"),
+            SetContextVariableAction(sync_value="sync"),
         ]
     )
 
@@ -171,9 +171,9 @@ async def test_async_process_error_handling():
 
     process = AsyncProcess(
         [
-            SetValueAction(step="1"),
+            SetContextVariableAction(step="1"),
             FailingAsyncAction(),
-            SetValueAction(step="3"),  # Should not execute
+            SetContextVariableAction(step="3"),  # Should not execute
         ]
     )
 
@@ -253,7 +253,7 @@ def test_async_actions_in_regular_process():
 
     process = Process(
         [
-            SetValueAction(value="sync"),
+            SetContextVariableAction(value="sync"),
             CustomAsyncAction("async"),
         ]
     )

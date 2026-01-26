@@ -2,7 +2,7 @@
 
 import pytest
 
-from fractal.core.process.actions import SetValueAction
+from fractal.core.process.actions import SetContextVariableAction
 from fractal.core.process.actions.control_flow import ForEachAction
 from fractal.core.process.process_context import ProcessContext
 
@@ -26,7 +26,7 @@ def test_foreach_static_iterable():
 def test_foreach_context_field_lookup():
     """Test ForEachAction with field name lookup from context."""
     action = ForEachAction(
-        "entities", [SetValueAction(processed=True)]  # Lookup from context
+        "entities", [SetContextVariableAction(processed=True)]  # Lookup from context
     )
 
     ctx = ProcessContext({"entities": ["user1", "user2", "user3"]})
@@ -40,7 +40,9 @@ def test_foreach_context_field_lookup():
 
 def test_foreach_callable():
     """Test ForEachAction with callable that returns iterable."""
-    action = ForEachAction(lambda ctx: range(ctx["count"]), [SetValueAction(seen=True)])
+    action = ForEachAction(
+        lambda ctx: range(ctx["count"]), [SetContextVariableAction(seen=True)]
+    )
 
     ctx = ProcessContext({"count": 5})
     result = action.execute(ctx)
@@ -108,7 +110,7 @@ def test_foreach_empty_iterable():
 
 def test_foreach_missing_context_field_raises():
     """Test that missing context field raises KeyError."""
-    action = ForEachAction("missing_field", [SetValueAction(x=1)])
+    action = ForEachAction("missing_field", [SetContextVariableAction(x=1)])
     ctx = ProcessContext()
 
     with pytest.raises(KeyError, match="missing_field"):
@@ -159,7 +161,9 @@ def test_foreach_nested_loops():
     inner_loop = ForEachAction("inner_items", [CollectPairAction()], item_field="inner")
 
     outer_loop = ForEachAction(
-        ["A", "B"], [SetValueAction(inner_items=[1, 2]), inner_loop], item_field="outer"
+        ["A", "B"],
+        [SetContextVariableAction(inner_items=[1, 2]), inner_loop],
+        item_field="outer",
     )
 
     ctx = ProcessContext()
