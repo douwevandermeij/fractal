@@ -3,7 +3,7 @@ from typing import Callable, Optional
 from fractal_specifications.generic.specification import Specification
 
 from fractal.core.process.action import Action
-from fractal.core.process.process_context import ProcessContext
+from fractal.core.process.process_context import ProcessContext, _expand_dotted_keys
 
 
 def _get_nested_value(ctx, field: str):
@@ -33,18 +33,25 @@ def _get_nested_value(ctx, field: str):
 
 
 class SetContextVariableAction(Action):
-    """Set context variables (top-level keys in the context).
+    """Set context variables with support for dot notation.
 
-    Example:
-        SetContextVariableAction(user_name="Alice", user_age=30)
-        # Results in: ctx["user_name"] = "Alice", ctx["user_age"] = 30
+    Supports both simple keys and dot notation for nested structures:
+        SetContextVariableAction(user_name="Alice")
+        # Results in: ctx["user_name"] = "Alice"
+
+        SetContextVariableAction(**{"fractal.context": app_context})
+        # Results in: ctx["fractal"]["context"] = app_context
+
+    Note: Use **{} syntax for dotted keys since Python doesn't allow dots in kwarg names.
     """
 
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        return ctx.update(ProcessContext(self.kwargs))
+        # Expand dotted keys into nested structure
+        expanded = _expand_dotted_keys(self.kwargs)
+        return ctx.update(ProcessContext(expanded))
 
 
 class SetValueAction(Action):

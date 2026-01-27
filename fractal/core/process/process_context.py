@@ -2,20 +2,98 @@ import copy as copy_module
 from typing import Dict, Optional
 
 
+def _expand_dotted_keys(flat_dict: dict) -> dict:
+    """Convert flat dict with dot-notation keys into nested dict.
+
+    This allows initialization to use dot notation:
+        {"fractal.context": value} → {"fractal": {"context": value}}
+
+    Args:
+        flat_dict: Dict with potentially dotted keys
+
+    Returns:
+        Dict with nested structure
+
+    Raises:
+        ValueError: If there are conflicts in the nested structure
+    """
+    result = {}
+    for key, value in flat_dict.items():
+        if "." not in key:
+            # Simple key, no nesting
+            result[key] = value
+        else:
+            # Dotted key, create nested structure
+            parts = key.split(".")
+            current = result
+            for part in parts[:-1]:
+                if part not in current:
+                    current[part] = {}
+                elif not isinstance(current[part], dict):
+                    # Conflict: trying to create nested structure where value exists
+                    raise ValueError(
+                        f"Cannot create nested key '{key}': '{part}' already has a non-dict value"
+                    )
+                current = current[part]
+
+            # Set the final value
+            final_key = parts[-1]
+            if final_key in current and isinstance(current[final_key], dict):
+                # Conflict: trying to set value where dict exists
+                raise ValueError(
+                    f"Cannot set '{key}': '{final_key}' already has nested keys"
+                )
+            current[final_key] = value
+
+    return result
+
+
+def _deep_merge(target: dict, source: dict) -> dict:
+    """Deep merge source dict into target dict.
+
+    Recursively merges nested dicts. Non-dict values in source overwrite target.
+
+    Args:
+        target: Dict to merge into (will be modified)
+        source: Dict to merge from
+
+    Returns:
+        The modified target dict
+    """
+    for key, value in source.items():
+        if key in target and isinstance(target[key], dict) and isinstance(value, dict):
+            # Both are dicts, merge recursively
+            _deep_merge(target[key], value)
+        else:
+            # Overwrite with source value
+            target[key] = value
+    return target
+
+
 class ProcessContext:
     """Process execution context with safe state management.
 
     Provides a dict-like interface for passing state between actions in a Process.
     Supports deep copying for parallel execution and optional freezing for immutability.
+    Supports dot notation in initialization for nested structures.
     """
 
     def __init__(self, data: Optional[Dict] = None):
         """Initialize context with optional data.
 
+        Supports dot notation for creating nested structures:
+            ProcessContext({"fractal.context": app_context})
+            # Creates: {"fractal": {"context": app_context}}
+
         Args:
-            data: Initial data dict (will be shallow copied for safety)
+            data: Initial data dict (will be shallow copied and expanded for dot notation)
         """
-        self._data = dict(data) if data else {}
+        if data:
+            # Expand any dotted keys into nested structure
+            expanded = _expand_dotted_keys(data)
+            self._data = dict(expanded)
+        else:
+            self._data = {}
         self._locked = False
 
     def __getattr__(self, item):
@@ -69,7 +147,10 @@ class ProcessContext:
         return self._data.get(key, default)
 
     def update(self, ctx: "ProcessContext") -> "ProcessContext":
-        """Merge another context into this one.
+        """Merge another context into this one with deep merging.
+
+        Recursively merges nested dicts from ctx into this context.
+        Non-dict values from ctx overwrite values in this context.
 
         Args:
             ctx: Context to merge from
@@ -82,7 +163,7 @@ class ProcessContext:
         """
         if self._locked:
             raise RuntimeError("Cannot modify frozen ProcessContext")
-        self._data.update(ctx._data)
+        _deep_merge(self._data, ctx._data)
         return self
 
     def copy(self) -> "ProcessContext":
