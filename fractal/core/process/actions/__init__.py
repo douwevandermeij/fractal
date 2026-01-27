@@ -32,6 +32,51 @@ def _get_nested_value(ctx, field: str):
     return value
 
 
+def _set_nested(ctx, field: str, value):
+    """Set nested field value using dot notation.
+
+    Args:
+        ctx: ProcessContext or object to navigate
+        field: Field name, can use dot notation for nested setting (e.g., "user.email")
+        value: Value to set
+
+    Raises:
+        KeyError: If parent path cannot be navigated
+        AttributeError: If final field cannot be set
+    """
+    parts = field.split(".")
+
+    if len(parts) == 1:
+        # Simple field - set directly in context
+        ctx[field] = value
+        return
+
+    # Navigate to the parent object
+    parent = ctx
+    path_so_far = []
+    for part in parts[:-1]:
+        path_so_far.append(part)
+        if hasattr(parent, "get"):
+            parent = parent.get(part)
+        elif hasattr(parent, part):
+            parent = getattr(parent, part)
+        else:
+            raise KeyError(f"Cannot navigate to '{'.'.join(path_so_far)}'")
+
+        # Check if we got None during navigation
+        if parent is None:
+            raise KeyError(f"Field '{'.'.join(path_so_far)}' is None")
+
+    # Set the final field
+    final_field = parts[-1]
+    if hasattr(parent, "__setitem__"):
+        parent[final_field] = value
+    elif hasattr(parent, final_field):
+        setattr(parent, final_field, value)
+    else:
+        raise AttributeError(f"Cannot set field '{final_field}' on object")
+
+
 class SetContextVariableAction(Action):
     """Set context variables with support for dot notation.
 
@@ -81,44 +126,9 @@ class SetValueAction(Action):
         source_value = _get_nested_value(ctx, self.source)
 
         # Set the target field
-        self._set_nested(ctx, self.target, source_value)
+        _set_nested(ctx, self.target, source_value)
 
         return ctx
-
-    @staticmethod
-    def _set_nested(ctx, field: str, value):
-        """Set nested field value using dot notation."""
-        parts = field.split(".")
-
-        if len(parts) == 1:
-            # Simple field - set directly in context
-            ctx[field] = value
-            return
-
-        # Navigate to the parent object
-        parent = ctx
-        path_so_far = []
-        for part in parts[:-1]:
-            path_so_far.append(part)
-            if hasattr(parent, "get"):
-                parent = parent.get(part)
-            elif hasattr(parent, part):
-                parent = getattr(parent, part)
-            else:
-                raise KeyError(f"Cannot navigate to '{'.'.join(path_so_far)}'")
-
-            # Check if we got None during navigation
-            if parent is None:
-                raise KeyError(f"Field '{'.'.join(path_so_far)}' is None")
-
-        # Set the final field
-        final_field = parts[-1]
-        if hasattr(parent, "__setitem__"):
-            parent[final_field] = value
-        elif hasattr(parent, final_field):
-            setattr(parent, final_field, value)
-        else:
-            raise AttributeError(f"Cannot set field '{final_field}' on object")
 
 
 class GetValueAction(Action):
@@ -155,12 +165,34 @@ class GetValueAction(Action):
 
 
 class ApplyToValueAction(Action):
+    """Apply a function to a field value and store the result back.
+
+    Supports dot notation for nested field access.
+
+    Example:
+        # Apply function to simple field
+        ApplyToValueAction(field="count", function=lambda x: x * 2)
+
+        # Apply function to nested field
+        ApplyToValueAction(field="user.preferences", function=lambda prefs: {**prefs, "theme": "dark"})
+    """
+
     def __init__(self, *, field: str, function: Callable):
+        """
+        Args:
+            field: Field name (supports dot notation, e.g., "user.preferences")
+            function: Function to apply to the field value
+        """
         self.field = field
         self.function = function
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        ctx[self.field] = self.function(ctx[self.field])
+        # Read with dot notation support
+        current_value = _get_nested_value(ctx, self.field)
+        # Apply function
+        new_value = self.function(current_value)
+        # Write with dot notation support
+        _set_nested(ctx, self.field, new_value)
         return ctx
 
 
@@ -208,12 +240,34 @@ class PublishEventAction(Action):
 
 
 class IncreaseValueAction(Action):
+    """Increase a numeric field value by a given amount.
+
+    Supports dot notation for nested field access.
+
+    Example:
+        # Increase simple field
+        IncreaseValueAction(field="count", value=1)
+
+        # Increase nested field
+        IncreaseValueAction(field="stats.page_views", value=1)
+    """
+
     def __init__(self, *, field: str, value):
+        """
+        Args:
+            field: Field name (supports dot notation, e.g., "stats.count")
+            value: Value to add to the field
+        """
         self.field = field
         self.value = value
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        ctx[self.field] += self.value
+        # Read with dot notation support
+        current_value = _get_nested_value(ctx, self.field)
+        # Add value
+        new_value = current_value + self.value
+        # Write with dot notation support
+        _set_nested(ctx, self.field, new_value)
         return ctx
 
 
@@ -242,7 +296,8 @@ class AddEntityAction(Action):
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
-        repository.add(getattr(ctx, self.entity))
+        entity_value = _get_nested_value(ctx, self.entity)
+        repository.add(entity_value)
         return ctx
 
 
@@ -256,11 +311,24 @@ class UpdateEntityAction(Action):
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
-        repository.update(getattr(ctx, self.entity), self.upsert)
+        entity_value = _get_nested_value(ctx, self.entity)
+        repository.update(entity_value, self.upsert)
         return ctx
 
 
 class FetchEntityAction(Action):
+    """Fetch a single entity from a repository and store it in context.
+
+    Supports dot notation for the entity storage field.
+
+    Example:
+        # Store in simple field
+        FetchEntityAction(repository_name="user_repository", specification=user_spec, entity="user")
+
+        # Store in nested field
+        FetchEntityAction(repository_name="user_repository", specification=user_spec, entity="request.user")
+    """
+
     def __init__(
         self,
         *,
@@ -268,17 +336,36 @@ class FetchEntityAction(Action):
         specification: Specification,
         entity: str = "entity",
     ):
+        """
+        Args:
+            repository_name: Name of repository in ApplicationContext
+            specification: Specification to match entity
+            entity: Field name to store entity (supports dot notation, default: "entity")
+        """
         self.repository_name = repository_name
         self.specification = specification
         self.entity = entity
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
-        ctx[self.entity] = repository.find_one(self.specification)
+        result = repository.find_one(self.specification)
+        _set_nested(ctx, self.entity, result)
         return ctx
 
 
 class FindEntitiesAction(Action):
+    """Find multiple entities from a repository and store them in context.
+
+    Supports dot notation for the entities storage field.
+
+    Example:
+        # Store in simple field
+        FindEntitiesAction(repository_name="user_repository", specification=active_spec, entities="users")
+
+        # Store in nested field
+        FindEntitiesAction(repository_name="user_repository", specification=active_spec, entities="data.users")
+    """
+
     def __init__(
         self,
         *,
@@ -286,13 +373,20 @@ class FindEntitiesAction(Action):
         specification: Optional[Specification] = None,
         entities: str = "entities",
     ):
+        """
+        Args:
+            repository_name: Name of repository in ApplicationContext
+            specification: Optional specification to filter entities
+            entities: Field name to store entities list (supports dot notation, default: "entities")
+        """
         self.repository_name = repository_name
         self.specification = specification
         self.entities = entities
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
-        ctx[self.entities] = repository.find(self.specification)
+        result = repository.find(self.specification)
+        _set_nested(ctx, self.entities, result)
         return ctx
 
 
@@ -308,38 +402,65 @@ class DeleteEntityAction(Action):
 
 
 class CommandAction(Action):
-    """Execute a command through the command bus."""
+    """Execute a command through the command bus.
 
-    def __init__(self, command_factory: Callable):
+    Supports dot notation for the result storage field.
+
+    Example:
+        # Store result in default field
+        CommandAction(lambda ctx: CreateUserCommand(name=ctx.user_name))
+
+        # Store result in nested field
+        CommandAction(
+            lambda ctx: CreateUserCommand(name=ctx.user_name),
+            result_field="command.result"
+        )
+    """
+
+    def __init__(
+        self, command_factory: Callable, result_field: str = "last_command_result"
+    ):
         """
         Args:
             command_factory: Callable that takes ProcessContext and returns Command.
                            Can access ctx.fractal.context for ApplicationContext.
+            result_field: Field name to store command result (supports dot notation, default: "last_command_result")
         """
         self.command_factory = command_factory
+        self.result_field = result_field
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         command = self.command_factory(ctx)
         result = ctx.fractal.context.command_bus.handle(command)
-        ctx["last_command_result"] = result
+        _set_nested(ctx, self.result_field, result)
         return ctx
 
 
 class QueryAction(Action):
-    """Execute a query/function and store result in context."""
+    """Execute a query/function and store result in context.
+
+    Supports dot notation for the result storage field.
+
+    Example:
+        # Store result in simple field
+        QueryAction(lambda ctx: fetch_users(), "users")
+
+        # Store result in nested field
+        QueryAction(lambda ctx: fetch_users(), "data.users")
+    """
 
     def __init__(self, query_func: Callable, result_field: str = "last_query_result"):
         """
         Args:
             query_func: Callable that takes ProcessContext and returns result
-            result_field: Field name to store result in context (default: "last_query_result")
+            result_field: Field name to store result in context (supports dot notation, default: "last_query_result")
         """
         self.query_func = query_func
         self.result_field = result_field
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         result = self.query_func(ctx)
-        ctx[self.result_field] = result
+        _set_nested(ctx, self.result_field, result)
         return ctx
 
 
@@ -351,34 +472,55 @@ try:
         """Execute a command asynchronously through the command bus.
 
         Requires command bus to have handle_async method.
+        Supports dot notation for the result storage field.
 
         Example:
+            # Store result in default field
             AsyncCommandAction(lambda ctx: CreateHouseCommand(
                 name=ctx.house_name,
                 address=ctx.house_address
             ))
+
+            # Store result in nested field
+            AsyncCommandAction(
+                lambda ctx: CreateHouseCommand(name=ctx.house_name),
+                result_field="command.result"
+            )
         """
 
-        def __init__(self, command_factory: Callable):
+        def __init__(
+            self, command_factory: Callable, result_field: str = "last_command_result"
+        ):
             """
             Args:
                 command_factory: Callable that takes ProcessContext and returns Command
+                result_field: Field name to store command result (supports dot notation, default: "last_command_result")
             """
             self.command_factory = command_factory
+            self.result_field = result_field
 
         async def execute_async(self, ctx: ProcessContext) -> ProcessContext:
             command = self.command_factory(ctx)
             result = await ctx.fractal.context.command_bus.handle_async(command)
-            ctx["last_command_result"] = result
+            _set_nested(ctx, self.result_field, result)
             return ctx
 
     class AsyncQueryAction(AsyncAction):
         """Execute an async query/function and store result in context.
 
+        Supports dot notation for the result storage field.
+
         Example:
+            # Store result in simple field
             AsyncQueryAction(
                 lambda ctx: await_fetch_houses_async(ctx.filter_status),
                 "houses"
+            )
+
+            # Store result in nested field
+            AsyncQueryAction(
+                lambda ctx: await_fetch_users_async(),
+                "data.users"
             )
         """
 
@@ -388,14 +530,14 @@ try:
             """
             Args:
                 query_func: Async callable that takes ProcessContext and returns result
-                result_field: Field name to store result in context
+                result_field: Field name to store result in context (supports dot notation, default: "last_query_result")
             """
             self.query_func = query_func
             self.result_field = result_field
 
         async def execute_async(self, ctx: ProcessContext) -> ProcessContext:
             result = await self.query_func(ctx)
-            ctx[self.result_field] = result
+            _set_nested(ctx, self.result_field, result)
             return ctx
 
 except ImportError:
