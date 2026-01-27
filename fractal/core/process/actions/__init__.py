@@ -164,6 +164,49 @@ class ApplyToValueAction(Action):
         return ctx
 
 
+class PublishEventAction(Action):
+    """Instantiate and publish a domain event through the event publisher.
+
+    This action allows events to be created and published within a Process workflow.
+    The event is constructed using a factory function that receives the ProcessContext,
+    allowing it to access command data, entities, and other context variables.
+
+    Example:
+        PublishEventAction(
+            event_factory=lambda ctx: EntityAddedEvent(
+                id=ctx.command.entity.id,
+                account_id=ctx.command.entity.account_id,
+                data=ctx.command.entity.asdict(),
+                by=ctx.command.user_id,
+                on=datetime.now(timezone.utc),
+                entity=ctx.command.entity,
+                specification=ctx.command.specification,
+            )
+        )
+    """
+
+    def __init__(self, event_factory: Callable):
+        """
+        Args:
+            event_factory: Callable that takes ProcessContext and returns an Event.
+                          Can access ctx.fractal.context for ApplicationContext.
+        """
+        self.event_factory = event_factory
+
+    def execute(self, ctx: ProcessContext) -> ProcessContext:
+        """Execute the action by creating and publishing the event.
+
+        Args:
+            ctx: ProcessContext containing command, entity, and application context
+
+        Returns:
+            Updated ProcessContext (unchanged, as event publishing has side effects)
+        """
+        event = self.event_factory(ctx)
+        ctx.fractal.context.event_publisher.publish_event(event)
+        return ctx
+
+
 class IncreaseValueAction(Action):
     def __init__(self, *, field: str, value):
         self.field = field
