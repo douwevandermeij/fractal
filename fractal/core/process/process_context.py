@@ -2,17 +2,49 @@ import copy as copy_module
 from typing import Dict, Optional
 
 
+class AttributeDict(dict):
+    """Dict subclass that supports attribute access for keys.
+
+    This allows nested dicts to be accessed with dot notation:
+        d = AttributeDict({"user": {"name": "Alice"}})
+        d.user.name  # Works!
+    """
+
+    def __getattr__(self, key):
+        """Allow attribute-style access for dict keys."""
+        try:
+            value = self[key]
+            # Recursively wrap nested dicts for attribute access
+            if isinstance(value, dict) and not isinstance(value, AttributeDict):
+                return AttributeDict(value)
+            return value
+        except KeyError:
+            # Return None for missing keys (consistent with ProcessContext behavior)
+            return None
+
+    def __setattr__(self, key, value):
+        """Disallow attribute setting - use dict syntax instead."""
+        self[key] = value
+
+    def __delattr__(self, key):
+        """Disallow attribute deletion - use dict syntax instead."""
+        del self[key]
+
+
 def _expand_dotted_keys(flat_dict: dict) -> dict:
-    """Convert flat dict with dot-notation keys into nested dict.
+    """Convert flat dict with dot-notation keys into nested AttributeDict.
 
     This allows initialization to use dot notation:
-        {"fractal.context": value} → {"fractal": {"context": value}}
+        {"fractal.context": value} → {"fractal": AttributeDict({"context": value})}
+
+    The nested structure uses AttributeDict to support attribute access:
+        ctx.fractal.context  # Works!
 
     Args:
         flat_dict: Dict with potentially dotted keys
 
     Returns:
-        Dict with nested structure
+        Dict with nested AttributeDict structure
 
     Raises:
         ValueError: If there are conflicts in the nested structure
@@ -23,12 +55,12 @@ def _expand_dotted_keys(flat_dict: dict) -> dict:
             # Simple key, no nesting
             result[key] = value
         else:
-            # Dotted key, create nested structure
+            # Dotted key, create nested structure using AttributeDict
             parts = key.split(".")
             current = result
             for part in parts[:-1]:
                 if part not in current:
-                    current[part] = {}
+                    current[part] = AttributeDict()
                 elif not isinstance(current[part], dict):
                     # Conflict: trying to create nested structure where value exists
                     raise ValueError(
@@ -52,6 +84,7 @@ def _deep_merge(target: dict, source: dict) -> dict:
     """Deep merge source dict into target dict.
 
     Recursively merges nested dicts. Non-dict values in source overwrite target.
+    Preserves AttributeDict type for nested structures.
 
     Args:
         target: Dict to merge into (will be modified)
@@ -66,7 +99,15 @@ def _deep_merge(target: dict, source: dict) -> dict:
             _deep_merge(target[key], value)
         else:
             # Overwrite with source value
-            target[key] = value
+            # If the value is a plain dict and target expects AttributeDict, convert it
+            if isinstance(value, dict) and not isinstance(value, AttributeDict):
+                # Check if we're merging into a structure that uses AttributeDict
+                if isinstance(target.get(key), AttributeDict):
+                    target[key] = AttributeDict(value)
+                else:
+                    target[key] = value
+            else:
+                target[key] = value
     return target
 
 

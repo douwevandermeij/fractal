@@ -35,10 +35,9 @@ def test_processcontext_init_attribute_access():
     """Test that nested dicts from dot notation support attribute access."""
     ctx = ProcessContext({"fractal.context": "app_context"})
 
-    # ctx.fractal returns a dict, so attribute access won't work on it
-    # This is expected behavior - nested dicts are plain dicts
-    assert ctx.fractal == {"context": "app_context"}
-    assert ctx["fractal"]["context"] == "app_context"
+    # ctx.fractal returns an AttributeDict, so attribute access works!
+    assert ctx.fractal.context == "app_context"  # ✅ Attribute access works!
+    assert ctx["fractal"]["context"] == "app_context"  # ✅ Dict access also works
 
 
 def test_processcontext_init_conflict_detection():
@@ -187,8 +186,33 @@ def test_real_world_fractal_context():
         }
     )
 
-    # Should work now
+    # Should work with both access patterns
     assert ctx["fractal"]["context"].command_bus == "command_bus_instance"
     assert ctx["fractal"]["context"].user_repository == "user_repo_instance"
+
+    # ✅ MOST IMPORTANTLY: Attribute access through nested structure works!
+    assert ctx.fractal.context.command_bus == "command_bus_instance"
+    assert ctx.fractal.context.user_repository == "user_repo_instance"
+
     assert ctx["command"] == "some_command"
     assert ctx["entity"] == "some_entity"
+
+
+def test_nested_attribute_access_in_action():
+    """Test that actions can use ctx.fractal.context attribute access."""
+
+    class MockApplicationContext:
+        def __init__(self):
+            self.command_bus = "command_bus_instance"
+            self.user_repository = "user_repo_instance"
+
+    app_context = MockApplicationContext()
+
+    # Initialize with dot notation
+    ctx = ProcessContext({"fractal.context": app_context})
+
+    # Simulate what happens in actions like FetchEntityAction
+    # They use: getattr(ctx.fractal.context, self.repository_name)
+    repository = getattr(ctx.fractal.context, "user_repository")
+
+    assert repository == "user_repo_instance"  # ✅ Works!
