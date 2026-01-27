@@ -312,7 +312,7 @@ class UpdateEntityAction(Action):
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
         entity_value = _get_nested_value(ctx, self.entity)
-        repository.update(entity_value, self.upsert)
+        repository.update(entity_value, upsert=self.upsert)
         return ctx
 
 
