@@ -174,7 +174,7 @@ def test_publishevent_with_command_handler_pattern():
                 actions_true=[
                     # Set audit field
                     SetValueAction(
-                        target="command.entity.created_by_id", source="command.user_id"
+                        target="command.entity.created_by_id", ctx_var="command.user_id"
                     ),
                     # Publish event
                     PublishEventAction(

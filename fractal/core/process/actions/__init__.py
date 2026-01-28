@@ -119,28 +119,28 @@ class SetContextVariableAction(Action):
 class SetValueAction(Action):
     """Set a nested field in a context variable to a value from another context variable.
 
-    Both target and source support dot notation.
+    Both target and ctx_var support dot notation.
 
     Example:
         # Set user.name from context variable user_name
-        SetValueAction(target="user.name", source="user_name")
+        SetValueAction(target="user.name", ctx_var="user_name")
 
         # Set user.address.city from another nested field
-        SetValueAction(target="user.address.city", source="company.location.city")
+        SetValueAction(target="user.address.city", ctx_var="company.location.city")
     """
 
-    def __init__(self, *, target: str, source: str):
+    def __init__(self, *, target: str, ctx_var: str):
         """
         Args:
             target: Target field to set (supports dot notation, e.g., "user.name")
-            source: Source context variable to read from (supports dot notation, e.g., "user_name")
+            ctx_var: Source context variable to read from (supports dot notation, e.g., "user_name")
         """
         self.target = target
-        self.source = source
+        self.ctx_var = ctx_var
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        # Get the source value from context
-        source_value = _get_nested_value(ctx, self.source)
+        # Get the value from context variable
+        source_value = _get_nested_value(ctx, self.ctx_var)
 
         # Set the target field
         _set_nested(ctx, self.target, source_value)
@@ -156,27 +156,27 @@ class GetValueAction(Action):
 
     Example:
         # Extract user.email into context variable user_email
-        GetValueAction(target="user_email", source="user.email")
+        GetValueAction(ctx_var="user_email", source="user.email")
 
         # Extract nested field
-        GetValueAction(target="city", source="company.address.city")
+        GetValueAction(ctx_var="city", source="company.address.city")
     """
 
-    def __init__(self, *, target: str, source: str):
+    def __init__(self, *, ctx_var: str, source: str):
         """
         Args:
-            target: Context variable name to store the value (simple name, no dots)
+            ctx_var: Context variable name to store the value (simple name, no dots)
             source: Source field to read from (supports dot notation, e.g., "user.email")
         """
-        self.target = target
+        self.ctx_var = ctx_var
         self.source = source
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         # Get the source value (supports dot notation)
         source_value = _get_nested_value(ctx, self.source)
 
-        # Set the target (simple context variable)
-        ctx[self.target] = source_value
+        # Set the context variable
+        ctx[self.ctx_var] = source_value
 
         return ctx
 

@@ -180,7 +180,7 @@ def test_entity_actions_in_workflow():
     process = Process(
         [
             # Set a field on the nested entity
-            SetValueAction(target="command.status", source="command.user_id"),
+            SetValueAction(target="command.status", ctx_var="command.user_id"),
             # Add using dot notation
             AddEntityAction(
                 repository_name="test_repository", ctx_var="command.entity"

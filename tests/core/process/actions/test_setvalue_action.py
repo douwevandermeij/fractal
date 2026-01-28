@@ -39,7 +39,7 @@ def test_setvalue_simple_field():
         {"user": User("Alice", "alice@example.com", 30), "new_name": "Bob"}
     )
 
-    action = SetValueAction(target="user.name", source="new_name")
+    action = SetValueAction(target="user.name", ctx_var="new_name")
     result = action.execute(ctx)
 
     assert result["user"].name == "Bob"
@@ -51,7 +51,7 @@ def test_setvalue_nested_field():
     company = Company(name="TechCorp", address=Address(city="New York", country="USA"))
     ctx = ProcessContext({"company": company, "new_city": "San Francisco"})
 
-    action = SetValueAction(target="company.address.city", source="new_city")
+    action = SetValueAction(target="company.address.city", ctx_var="new_city")
     result = action.execute(ctx)
 
     assert result["company"].address.city == "San Francisco"
@@ -64,7 +64,7 @@ def test_setvalue_from_nested_source():
     company = Company(name="TechCorp", address=Address(city="New York", country="USA"))
     ctx = ProcessContext({"user": user, "company": company})
 
-    action = SetValueAction(target="user.email", source="company.address.city")
+    action = SetValueAction(target="user.email", ctx_var="company.address.city")
     result = action.execute(ctx)
 
     # Set user.email to the value of company.address.city
@@ -75,7 +75,7 @@ def test_setvalue_context_variable_to_context_variable():
     """Test setting one context variable to another."""
     ctx = ProcessContext({"name": "Alice", "backup_name": "Bob"})
 
-    action = SetValueAction(target="name", source="backup_name")
+    action = SetValueAction(target="name", ctx_var="backup_name")
     result = action.execute(ctx)
 
     assert result["name"] == "Bob"
@@ -88,7 +88,7 @@ def test_setvalue_dict_field():
         {"config": {"database": "postgres", "port": 5432}, "new_db": "mysql"}
     )
 
-    action = SetValueAction(target="config.database", source="new_db")
+    action = SetValueAction(target="config.database", ctx_var="new_db")
     result = action.execute(ctx)
 
     assert result["config"]["database"] == "mysql"
@@ -99,7 +99,7 @@ def test_setvalue_missing_source_raises():
     """Test that missing source field raises KeyError."""
     ctx = ProcessContext({"user": User("Alice", "alice@example.com", 30)})
 
-    action = SetValueAction(target="user.name", source="missing_field")
+    action = SetValueAction(target="user.name", ctx_var="missing_field")
 
     with pytest.raises(KeyError, match="missing_field"):
         action.execute(ctx)
@@ -109,7 +109,7 @@ def test_setvalue_missing_target_path_raises():
     """Test that invalid target path raises KeyError."""
     ctx = ProcessContext({"name": "Alice", "missing": None})
 
-    action = SetValueAction(target="missing.field", source="name")
+    action = SetValueAction(target="missing.field", ctx_var="name")
 
     with pytest.raises(KeyError, match="missing"):
         action.execute(ctx)
@@ -119,7 +119,7 @@ def test_setvalue_none_in_path_raises():
     """Test that None in path raises KeyError."""
     ctx = ProcessContext({"user": None, "name": "Alice"})
 
-    action = SetValueAction(target="user.name", source="name")
+    action = SetValueAction(target="user.name", ctx_var="name")
 
     with pytest.raises(KeyError, match="user"):
         action.execute(ctx)
@@ -136,9 +136,9 @@ def test_setvalue_chain_multiple_actions():
 
     process = Process(
         [
-            SetValueAction(target="user.name", source="new_name"),
-            SetValueAction(target="user.email", source="new_email"),
-            SetValueAction(target="user.age", source="new_age"),
+            SetValueAction(target="user.name", ctx_var="new_name"),
+            SetValueAction(target="user.email", ctx_var="new_email"),
+            SetValueAction(target="user.age", ctx_var="new_age"),
         ]
     )
 
@@ -160,7 +160,7 @@ def test_setvalue_with_dataclass():
     person = Person(first_name="Alice", last_name="Smith")
     ctx = ProcessContext({"person": person, "surname": "Jones"})
 
-    action = SetValueAction(target="person.last_name", source="surname")
+    action = SetValueAction(target="person.last_name", ctx_var="surname")
     result = action.execute(ctx)
 
     assert result["person"].last_name == "Jones"
@@ -173,7 +173,7 @@ def test_setvalue_copy_between_objects():
     company = Company(name="TechCorp", address=Address(city="New York", country="USA"))
     ctx = ProcessContext({"user": user, "company": company})
 
-    action = SetValueAction(target="user.name", source="company.name")
+    action = SetValueAction(target="user.name", ctx_var="company.name")
     result = action.execute(ctx)
 
     assert result["user"].name == "TechCorp"

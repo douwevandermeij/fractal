@@ -38,7 +38,7 @@ def test_getvalue_simple_field():
     user = User("Alice", "alice@example.com", 30)
     ctx = ProcessContext({"user": user})
 
-    action = GetValueAction(target="user_email", source="user.email")
+    action = GetValueAction(ctx_var="user_email", source="user.email")
     result = action.execute(ctx)
 
     assert result["user_email"] == "alice@example.com"
@@ -50,7 +50,7 @@ def test_getvalue_nested_field():
     company = Company(name="TechCorp", address=Address(city="New York", country="USA"))
     ctx = ProcessContext({"company": company})
 
-    action = GetValueAction(target="city", source="company.address.city")
+    action = GetValueAction(ctx_var="city", source="company.address.city")
     result = action.execute(ctx)
 
     assert result["city"] == "New York"
@@ -66,9 +66,9 @@ def test_getvalue_multiple_extractions():
 
     process = Process(
         [
-            GetValueAction(target="user_name", source="user.name"),
-            GetValueAction(target="user_email", source="user.email"),
-            GetValueAction(target="user_age", source="user.age"),
+            GetValueAction(ctx_var="user_name", source="user.name"),
+            GetValueAction(ctx_var="user_email", source="user.email"),
+            GetValueAction(ctx_var="user_age", source="user.age"),
         ]
     )
 
@@ -83,7 +83,7 @@ def test_getvalue_from_dict():
     """Test extracting from dict fields."""
     ctx = ProcessContext({"config": {"database": "postgres", "port": 5432}})
 
-    action = GetValueAction(target="db_name", source="config.database")
+    action = GetValueAction(ctx_var="db_name", source="config.database")
     result = action.execute(ctx)
 
     assert result["db_name"] == "postgres"
@@ -94,7 +94,7 @@ def test_getvalue_missing_source_raises():
     """Test that missing source field raises KeyError."""
     ctx = ProcessContext({"user": User("Alice", "alice@example.com", 30)})
 
-    action = GetValueAction(target="phone", source="user.phone")
+    action = GetValueAction(ctx_var="phone", source="user.phone")
 
     with pytest.raises(KeyError, match="user.phone"):
         action.execute(ctx)
@@ -104,7 +104,7 @@ def test_getvalue_none_in_path_raises():
     """Test that None in path raises KeyError."""
     ctx = ProcessContext({"user": None})
 
-    action = GetValueAction(target="user_name", source="user.name")
+    action = GetValueAction(ctx_var="user_name", source="user.name")
 
     with pytest.raises(KeyError, match="user"):
         action.execute(ctx)
@@ -122,8 +122,8 @@ def test_getvalue_with_setvalue_round_trip():
     # Extract user1's name and assign it to user2's name
     process = Process(
         [
-            GetValueAction(target="temp_name", source="user1.name"),
-            SetValueAction(target="user2.name", source="temp_name"),
+            GetValueAction(ctx_var="temp_name", source="user1.name"),
+            SetValueAction(target="user2.name", ctx_var="temp_name"),
         ]
     )
 
@@ -152,7 +152,7 @@ def test_getvalue_deeply_nested():
     nested = Level1(level2=Level2(level3=Level3(value="deep")))
     ctx = ProcessContext({"nested": nested})
 
-    action = GetValueAction(target="deep_value", source="nested.level2.level3.value")
+    action = GetValueAction(ctx_var="deep_value", source="nested.level2.level3.value")
     result = action.execute(ctx)
 
     assert result["deep_value"] == "deep"
@@ -166,13 +166,13 @@ def test_getvalue_semantic_clarity():
     ctx = ProcessContext({"user": user})
 
     # GetValueAction: "I'm extracting a value into context"
-    get_action = GetValueAction(target="user_email", source="user.email")
+    get_action = GetValueAction(ctx_var="user_email", source="user.email")
     result1 = get_action.execute(ctx.copy())
     assert result1["user_email"] == "alice@example.com"
 
     # SetValueAction with simple target: technically the same operation
     # but SetValueAction implies "I'm setting/modifying something"
-    set_action = SetValueAction(target="user_email_copy", source="user.email")
+    set_action = SetValueAction(target="user_email_copy", ctx_var="user.email")
     result2 = set_action.execute(ctx.copy())
     assert result2["user_email_copy"] == "alice@example.com"
 
@@ -183,7 +183,7 @@ def test_getvalue_context_variable_to_context_variable():
     """Test that GetValueAction can also extract simple context variables."""
     ctx = ProcessContext({"source_var": "value"})
 
-    action = GetValueAction(target="target_var", source="source_var")
+    action = GetValueAction(ctx_var="target_var", source="source_var")
     result = action.execute(ctx)
 
     assert result["target_var"] == "value"
