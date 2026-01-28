@@ -1,6 +1,9 @@
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 from fractal_specifications.generic.specification import Specification
+
+if TYPE_CHECKING:
+    from fractal.core.process.process_context import ProcessContext
 
 
 class CallableSpecification(Specification):
@@ -36,7 +39,7 @@ class CallableSpecification(Specification):
         return None
 
 
-def _get_nested(ctx, field: str):
+def _get_nested(ctx: "ProcessContext", field: str) -> Any:
     """Get nested field value using dot notation (e.g., 'house.status').
 
     Args:
@@ -74,7 +77,7 @@ def has_field(field: str) -> Specification:
     Returns:
         Specification that checks field existence
     """
-    return CallableSpecification(lambda s: _get_nested(s, field) is not None)
+    return CallableSpecification(lambda ctx: _get_nested(ctx, field) is not None)
 
 
 def field_equals(field: str, value: Any) -> Specification:
@@ -93,7 +96,7 @@ def field_equals(field: str, value: Any) -> Specification:
     Returns:
         Specification that checks field equality
     """
-    return CallableSpecification(lambda s: _get_nested(s, field) == value)
+    return CallableSpecification(lambda ctx: _get_nested(ctx, field) == value)
 
 
 def field_in(field: str, values: list) -> Specification:
@@ -109,7 +112,7 @@ def field_in(field: str, values: list) -> Specification:
     Returns:
         Specification that checks field membership
     """
-    return CallableSpecification(lambda s: _get_nested(s, field) in values)
+    return CallableSpecification(lambda ctx: _get_nested(ctx, field) in values)
 
 
 def field_gt(field: str, value: Any) -> Specification:
@@ -127,8 +130,8 @@ def field_gt(field: str, value: Any) -> Specification:
         Specification that checks field > value
     """
 
-    def check(s):
-        field_value = _get_nested(s, field)
+    def check(ctx: "ProcessContext") -> bool:
+        field_value = _get_nested(ctx, field)
         return field_value is not None and field_value > value
 
     return CallableSpecification(check)
@@ -149,8 +152,8 @@ def field_lt(field: str, value: Any) -> Specification:
         Specification that checks field < value
     """
 
-    def check(s):
-        field_value = _get_nested(s, field)
+    def check(ctx: "ProcessContext") -> bool:
+        field_value = _get_nested(ctx, field)
         return field_value is not None and field_value < value
 
     return CallableSpecification(check)
@@ -170,8 +173,8 @@ def field_gte(field: str, value: Any) -> Specification:
         Specification that checks field >= value
     """
 
-    def check(s):
-        field_value = _get_nested(s, field)
+    def check(ctx: "ProcessContext") -> bool:
+        field_value = _get_nested(ctx, field)
         return field_value is not None and field_value >= value
 
     return CallableSpecification(check)
@@ -191,8 +194,8 @@ def field_lte(field: str, value: Any) -> Specification:
         Specification that checks field <= value
     """
 
-    def check(s):
-        field_value = _get_nested(s, field)
+    def check(ctx: "ProcessContext") -> bool:
+        field_value = _get_nested(ctx, field)
         return field_value is not None and field_value <= value
 
     return CallableSpecification(check)
@@ -213,40 +216,70 @@ def field_contains(field: str, substring: str) -> Specification:
         Specification that checks field contains substring
     """
     return CallableSpecification(
-        lambda s: substring in str(_get_nested(s, field) or "")
+        lambda ctx: substring in str(_get_nested(ctx, field) or "")
     )
 
 
-def on_field(field: str, specification: Specification) -> Specification:
+def on_field(field: str, specification: Union[str, Specification]) -> Specification:
     """Apply an entity specification to a field in the ProcessContext.
 
     This separates field selection from specification logic, allowing you to
     reuse entity specifications from your domain with ProcessContext.
 
+    The specification parameter supports both:
+    - Direct Specification object (old pattern, backward compatible)
+    - String context variable name (new pattern, recommended)
+
     Example:
-        # Define entity specification (reusable across your domain)
+        # OLD PATTERN (still supported) - Direct specification
         from fractal_specifications.generic.specification import field_equals
         house_is_active = field_equals("status", "active")
 
-        # Apply to context field
         IfElseAction(
             specification=on_field("house", house_is_active),
             actions_true=[...]
         )
+
+        # NEW PATTERN (recommended) - Context-based specification
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: field_equals("status", "active"),
+                ctx_var="house_is_active"
+            ),
+            IfElseAction(
+                specification=on_field("house", "house_is_active"),  # String!
+                actions_true=[...]
+            )
+        ])
 
         # Compose with other context checks
         on_field("house", house_is_active) & has_field("user")
 
     Args:
         field: Field name in ProcessContext (supports dot notation)
-        specification: Entity specification to apply to the field value
+        specification: Entity specification to apply to the field value.
+                      Can be either:
+                      - A Specification object (direct specification)
+                      - A string (context variable name containing specification)
 
     Returns:
         Specification that extracts field from context and applies entity spec
     """
-    return CallableSpecification(
-        lambda ctx: (
-            (entity := _get_nested(ctx, field)) is not None
-            and specification.is_satisfied_by(entity)
-        )
-    )
+
+    def check(ctx: "ProcessContext") -> bool:
+        # Get the field value
+        entity = _get_nested(ctx, field)
+        if entity is None:
+            return False
+
+        # Support both string (context var name) and Specification object
+        if isinstance(specification, str):
+            # New pattern: get specification from context
+            spec = _get_nested(ctx, specification)
+        else:
+            # Backward compatibility: direct Specification object
+            spec = specification
+
+        return spec.is_satisfied_by(entity)
+
+    return CallableSpecification(check)

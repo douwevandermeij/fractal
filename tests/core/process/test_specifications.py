@@ -388,3 +388,167 @@ def test_on_field_vs_field_equals():
     assert separated_spec.is_satisfied_by(ctx) is True
 
     # Both work, but on_field separates concerns and allows reusing entity specs
+
+
+def test_on_field_with_context_spec_string():
+    """Test on_field with specification from context (string parameter)."""
+    from fractal.core.process.actions import CreateSpecificationAction
+
+    # Entity spec using fractal-specifications
+    entity_spec = CallableSpecification(lambda house: house.status == "active")
+
+    # Store specification in context
+    ctx = ProcessContext({})
+    create_action = CreateSpecificationAction(
+        spec_factory=lambda _: entity_spec, ctx_var="house_is_active"
+    )
+    ctx = create_action.execute(ctx)
+
+    # Use on_field with string (context var name)
+    context_spec = on_field("house", "house_is_active")
+
+    house1 = House(status="active", price=100000)
+    house2 = House(status="inactive", price=100000)
+
+    ctx1 = ProcessContext({"house": house1, "house_is_active": entity_spec})
+    ctx2 = ProcessContext({"house": house2, "house_is_active": entity_spec})
+
+    assert context_spec.is_satisfied_by(ctx1) is True
+    assert context_spec.is_satisfied_by(ctx2) is False
+
+
+def test_on_field_with_context_spec_dot_notation():
+    """Test on_field with nested specification in context."""
+    entity_spec = CallableSpecification(lambda house: house.price > 50000)
+
+    # Store specification in nested structure
+    ctx = ProcessContext({"specs": {"expensive_house": entity_spec}})
+
+    # Use on_field with dot notation for specification
+    context_spec = on_field("house", "specs.expensive_house")
+
+    house1 = House(status="active", price=100000)
+    house2 = House(status="active", price=30000)
+
+    ctx1 = ProcessContext({"house": house1, "specs": {"expensive_house": entity_spec}})
+    ctx2 = ProcessContext({"house": house2, "specs": {"expensive_house": entity_spec}})
+
+    assert context_spec.is_satisfied_by(ctx1) is True
+    assert context_spec.is_satisfied_by(ctx2) is False
+
+
+def test_on_field_in_workflow_with_context_spec():
+    """Test on_field with context-based specification in complete workflow."""
+    from fractal.core.process.actions import (
+        CreateSpecificationAction,
+        SetContextVariableAction,
+    )
+    from fractal.core.process.actions.control_flow import IfElseAction
+    from fractal.core.process.process import Process
+
+    # Entity specification (for house object)
+    entity_spec = CallableSpecification(
+        lambda house: house.status == "active" and house.price > 50000
+    )
+
+    house1 = House(status="active", price=100000)
+    house2 = House(status="inactive", price=100000)
+
+    # Workflow with context-based specification
+    process = Process(
+        [
+            SetContextVariableAction(house=house1),
+            CreateSpecificationAction(
+                spec_factory=lambda _: entity_spec, ctx_var="premium_house_spec"
+            ),
+            IfElseAction(
+                specification=on_field("house", "premium_house_spec"),
+                actions_true=[SetContextVariableAction(result="premium")],
+                actions_false=[SetContextVariableAction(result="basic")],
+            ),
+        ]
+    )
+
+    result = process.run(ProcessContext({}))
+    assert result["result"] == "premium"
+
+    # Test with inactive house
+    process2 = Process(
+        [
+            SetContextVariableAction(house=house2),
+            CreateSpecificationAction(
+                spec_factory=lambda _: entity_spec, ctx_var="premium_house_spec"
+            ),
+            IfElseAction(
+                specification=on_field("house", "premium_house_spec"),
+                actions_true=[SetContextVariableAction(result="premium")],
+                actions_false=[SetContextVariableAction(result="basic")],
+            ),
+        ]
+    )
+
+    result2 = process2.run(ProcessContext({}))
+    assert result2["result"] == "basic"
+
+
+def test_on_field_backward_compatibility():
+    """Test that on_field still works with direct Specification objects."""
+    # This test ensures backward compatibility with old code
+
+    # Old pattern - direct specification object
+    entity_spec = CallableSpecification(lambda house: house.status == "active")
+    context_spec = on_field("house", entity_spec)
+
+    house1 = House(status="active", price=100000)
+    house2 = House(status="inactive", price=100000)
+
+    ctx1 = ProcessContext({"house": house1})
+    ctx2 = ProcessContext({"house": house2})
+
+    assert context_spec.is_satisfied_by(ctx1) is True
+    assert context_spec.is_satisfied_by(ctx2) is False
+
+
+def test_on_field_mixed_patterns():
+    """Test mixing old (direct spec) and new (context spec) patterns."""
+    from fractal.core.process.actions import (
+        CreateSpecificationAction,
+        SetContextVariableAction,
+    )
+    from fractal.core.process.actions.control_flow import IfElseAction
+    from fractal.core.process.process import Process
+
+    house = House(status="active", price=100000)
+
+    # Old pattern - direct specification
+    direct_spec = CallableSpecification(lambda h: h.status == "active")
+
+    # New pattern - context-based specification
+    price_spec = CallableSpecification(lambda h: h.price > 50000)
+
+    process = Process(
+        [
+            SetContextVariableAction(house=house),
+            # Old pattern in first check
+            IfElseAction(
+                specification=on_field("house", direct_spec),
+                actions_true=[
+                    # New pattern in second check
+                    CreateSpecificationAction(
+                        spec_factory=lambda _: price_spec, ctx_var="price_check"
+                    ),
+                    IfElseAction(
+                        specification=on_field("house", "price_check"),
+                        actions_true=[
+                            SetContextVariableAction(result="premium_active")
+                        ],
+                        actions_false=[SetContextVariableAction(result="basic_active")],
+                    ),
+                ],
+                actions_false=[SetContextVariableAction(result="inactive")],
+            ),
+        ]
+    )
+
+    result = process.run(ProcessContext({}))
+    assert result["result"] == "premium_active"
