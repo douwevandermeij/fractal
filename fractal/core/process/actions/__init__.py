@@ -249,13 +249,13 @@ class CreateSpecificationAction(Action):
     Example:
         # Simple specification
         CreateSpecificationAction(
-            spec_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"]),
+            specification_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"]),
             ctx_var="user_spec"
         )
 
         # Complex specification using context values
         CreateSpecificationAction(
-            spec_factory=lambda ctx: (
+            specification_factory=lambda ctx: (
                 EqualsSpecification("status", ctx["filter_status"]) &
                 GreaterThanSpecification("price", ctx["min_price"])
             ),
@@ -264,13 +264,13 @@ class CreateSpecificationAction(Action):
 
         # Specification from command
         CreateSpecificationAction(
-            spec_factory=lambda ctx: ctx.command.get_specification(),
+            specification_factory=lambda ctx: ctx.command.get_specification(),
             ctx_var="validation_spec"
         )
 
         # Using default ctx_var
         CreateSpecificationAction(
-            spec_factory=lambda ctx: EqualsSpecification("id", 1)
+            specification_factory=lambda ctx: EqualsSpecification("id", 1)
             # Stores in "specification" by default
         )
     """
@@ -278,19 +278,19 @@ class CreateSpecificationAction(Action):
     def __init__(
         self,
         *,
-        spec_factory: Callable[[ProcessContext], Specification],
+        specification_factory: Callable[[ProcessContext], Specification],
         ctx_var: str = "specification",
     ):
         """
         Args:
-            spec_factory: Callable that takes ProcessContext and returns a Specification
+            specification_factory: Callable that takes ProcessContext and returns a Specification
             ctx_var: Context variable name to store the specification (default: "specification")
         """
-        self.spec_factory = spec_factory
+        self.specification_factory = specification_factory
         self.ctx_var = ctx_var
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        spec = self.spec_factory(ctx)
+        spec = self.specification_factory(ctx)
         _set_nested(ctx, self.ctx_var, spec)
         return ctx
 
@@ -505,7 +505,7 @@ class FetchEntityAction(Action):
         # New pattern (recommended) - using default "specification" variable
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"])
+                specification_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"])
             ),
             FetchEntityAction(repository_name="user_repository", ctx_var="user")
         ])
@@ -513,7 +513,7 @@ class FetchEntityAction(Action):
         # New pattern - using custom specification variable
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: EqualsSpecification("id", 1),
+                specification_factory=lambda ctx: EqualsSpecification("id", 1),
                 ctx_var="user_spec"
             ),
             FetchEntityAction(
@@ -581,7 +581,7 @@ class FindEntitiesAction(Action):
         # New pattern - using default "specification" variable
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: EqualsSpecification("status", "active")
+                specification_factory=lambda ctx: EqualsSpecification("status", "active")
             ),
             FindEntitiesAction(repository_name="user_repository", specification="specification", ctx_var="users")
         ])
@@ -589,7 +589,7 @@ class FindEntitiesAction(Action):
         # New pattern - using custom specification variable
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: GreaterThanSpecification("age", 18),
+                specification_factory=lambda ctx: GreaterThanSpecification("age", 18),
                 ctx_var="age_filter"
             ),
             FindEntitiesAction(
@@ -657,7 +657,7 @@ class DeleteEntityAction(Action):
         # New pattern - using default "specification" variable
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"])
+                specification_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"])
             ),
             DeleteEntityAction(repository_name="user_repository")
         ])
@@ -665,7 +665,7 @@ class DeleteEntityAction(Action):
         # New pattern - using custom specification variable
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: EqualsSpecification("id", 1),
+                specification_factory=lambda ctx: EqualsSpecification("id", 1),
                 ctx_var="delete_spec"
             ),
             DeleteEntityAction(

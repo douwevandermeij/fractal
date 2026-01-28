@@ -79,7 +79,9 @@ def test_subprocess_with_conditional():
         [
             SetContextVariableAction(needs_validation=True),
             CreateSpecificationAction(
-                spec_factory=lambda ctx: field_equals("needs_validation", True),
+                specification_factory=lambda ctx: field_equals(
+                    "needs_validation", True
+                ),
                 ctx_var="validation_check",
             ),
             IfElseAction(

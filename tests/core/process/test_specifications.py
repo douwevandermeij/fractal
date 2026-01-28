@@ -243,7 +243,9 @@ def test_specification_with_ifelse_action():
 
     process = Process(
         [
-            CreateSpecificationAction(spec_factory=lambda ctx: spec, ctx_var="check"),
+            CreateSpecificationAction(
+                specification_factory=lambda ctx: spec, ctx_var="check"
+            ),
             IfElseAction(
                 specification="check",
                 actions_true=[SetContextVariableAction(result="house is active")],
@@ -400,7 +402,7 @@ def test_on_field_with_context_spec_string():
     # Store specification in context
     ctx = ProcessContext({})
     create_action = CreateSpecificationAction(
-        spec_factory=lambda _: entity_spec, ctx_var="house_is_active"
+        specification_factory=lambda _: entity_spec, ctx_var="house_is_active"
     )
     ctx = create_action.execute(ctx)
 
@@ -459,7 +461,8 @@ def test_on_field_in_workflow_with_context_spec():
         [
             SetContextVariableAction(house=house1),
             CreateSpecificationAction(
-                spec_factory=lambda _: entity_spec, ctx_var="premium_house_spec"
+                specification_factory=lambda _: entity_spec,
+                ctx_var="premium_house_spec",
             ),
             IfElseAction(
                 specification=on_field("house", "premium_house_spec"),
@@ -477,7 +480,8 @@ def test_on_field_in_workflow_with_context_spec():
         [
             SetContextVariableAction(house=house2),
             CreateSpecificationAction(
-                spec_factory=lambda _: entity_spec, ctx_var="premium_house_spec"
+                specification_factory=lambda _: entity_spec,
+                ctx_var="premium_house_spec",
             ),
             IfElseAction(
                 specification=on_field("house", "premium_house_spec"),
@@ -535,7 +539,8 @@ def test_on_field_mixed_patterns():
                 actions_true=[
                     # New pattern in second check
                     CreateSpecificationAction(
-                        spec_factory=lambda _: price_spec, ctx_var="price_check"
+                        specification_factory=lambda _: price_spec,
+                        ctx_var="price_check",
                     ),
                     IfElseAction(
                         specification=on_field("house", "price_check"),

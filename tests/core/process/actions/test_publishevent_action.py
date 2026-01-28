@@ -164,7 +164,7 @@ def test_publishevent_with_command_handler_pattern():
     process = Process(
         [
             CreateSpecificationAction(
-                spec_factory=lambda ctx: on_field(
+                specification_factory=lambda ctx: on_field(
                     "command.entity", ctx.command.get_specification()
                 ),
                 ctx_var="entity_spec",

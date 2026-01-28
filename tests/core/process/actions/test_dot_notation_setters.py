@@ -154,7 +154,7 @@ class TestFetchEntityActionDotNotation:
         # Create specification and store in context
         spec = EqualsSpecification("id", 1)
         spec_action = CreateSpecificationAction(
-            spec_factory=lambda ctx: spec, ctx_var="user_spec"
+            specification_factory=lambda ctx: spec, ctx_var="user_spec"
         )
         ctx = spec_action.execute(ctx)
 
@@ -184,7 +184,7 @@ class TestFetchEntityActionDotNotation:
         # Create specification and store in context
         spec = EqualsSpecification("id", 1)
         spec_action = CreateSpecificationAction(
-            spec_factory=lambda ctx: spec, ctx_var="user_spec"
+            specification_factory=lambda ctx: spec, ctx_var="user_spec"
         )
         ctx = spec_action.execute(ctx)
 
@@ -215,7 +215,7 @@ class TestFetchEntityActionDotNotation:
         # Create specification and store in context
         spec = EqualsSpecification("user_id", 1)
         spec_action = CreateSpecificationAction(
-            spec_factory=lambda ctx: spec, ctx_var="profile_spec"
+            specification_factory=lambda ctx: spec, ctx_var="profile_spec"
         )
         ctx = spec_action.execute(ctx)
 
@@ -249,7 +249,7 @@ class TestFindEntitiesActionDotNotation:
         # Create specification and store in context
         spec = EqualsSpecification("status", "active")
         spec_action = CreateSpecificationAction(
-            spec_factory=lambda ctx: spec, ctx_var="status_spec"
+            specification_factory=lambda ctx: spec, ctx_var="status_spec"
         )
         ctx = spec_action.execute(ctx)
 
@@ -281,7 +281,7 @@ class TestFindEntitiesActionDotNotation:
         # Create specification and store in context
         spec = EqualsSpecification("status", "active")
         spec_action = CreateSpecificationAction(
-            spec_factory=lambda ctx: spec, ctx_var="status_spec"
+            specification_factory=lambda ctx: spec, ctx_var="status_spec"
         )
         ctx = spec_action.execute(ctx)
 
@@ -444,7 +444,7 @@ class TestCompleteWorkflow:
         # 2. Create specification for fetch
         spec = EqualsSpecification("id", 1)
         spec_action = CreateSpecificationAction(
-            spec_factory=lambda ctx: spec, ctx_var="fetch_spec"
+            specification_factory=lambda ctx: spec, ctx_var="fetch_spec"
         )
         ctx = spec_action.execute(ctx)
 
