@@ -78,12 +78,20 @@ def _set_nested(ctx, field: str, value):
 
 
 class SetContextVariableAction(Action):
-    """Set context variables with support for dot notation.
+    """Set context variables with support for dot notation and callable values.
 
-    Supports both simple keys and dot notation for nested structures:
+    Supports both static values and callable functions that receive the context:
+        # Static values
         SetContextVariableAction(user_name="Alice")
         # Results in: ctx["user_name"] = "Alice"
 
+        # Dynamic values using lambda functions
+        SetContextVariableAction(
+            doubled_price=lambda ctx: ctx["price"] * 2,
+            status=lambda ctx: "active" if ctx["enabled"] else "inactive"
+        )
+
+        # Dot notation for nested structures
         SetContextVariableAction(**{"fractal.context": app_context})
         # Results in: ctx["fractal"]["context"] = app_context
 
@@ -94,8 +102,17 @@ class SetContextVariableAction(Action):
         self.kwargs = kwargs
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
+        # Resolve callable values (lambdas/functions that take ctx)
+        resolved_kwargs = {}
+        for key, value in self.kwargs.items():
+            if callable(value):
+                # Call the function with context to get the actual value
+                resolved_kwargs[key] = value(ctx)
+            else:
+                resolved_kwargs[key] = value
+
         # Expand dotted keys into nested structure
-        expanded = _expand_dotted_keys(self.kwargs)
+        expanded = _expand_dotted_keys(resolved_kwargs)
         return ctx.update(ProcessContext(expanded))
 
 

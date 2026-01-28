@@ -42,7 +42,7 @@ class IfElseAction(Action):
         # New pattern - using default "specification" variable
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: EqualsSpecification("status", "active")
+                specification_factory=lambda ctx: EqualsSpecification("status", "active")
             ),
             IfElseAction(
                 actions_true=[...],
@@ -53,7 +53,7 @@ class IfElseAction(Action):
         # New pattern - using custom specification variable
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: GreaterThanSpecification("count", 10),
+                specification_factory=lambda ctx: GreaterThanSpecification("count", 10),
                 ctx_var="count_check"
             ),
             IfElseAction(
@@ -116,7 +116,7 @@ class WhileAction(Action):
         Process([
             SetContextVariableAction(count=0),
             CreateSpecificationAction(
-                spec_factory=lambda ctx: LessThanSpecification("count", 5)
+                specification_factory=lambda ctx: LessThanSpecification("count", 5)
             ),
             WhileAction(
                 actions=[
@@ -129,7 +129,7 @@ class WhileAction(Action):
         # New pattern - using custom specification variable
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: GreaterThanSpecification("items_left", 0),
+                specification_factory=lambda ctx: GreaterThanSpecification("items_left", 0),
                 ctx_var="has_items"
             ),
             WhileAction(

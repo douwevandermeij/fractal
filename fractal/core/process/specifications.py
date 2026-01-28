@@ -243,7 +243,7 @@ def on_field(field: str, specification: Union[str, Specification]) -> Specificat
         # NEW PATTERN (recommended) - Context-based specification
         Process([
             CreateSpecificationAction(
-                spec_factory=lambda ctx: field_equals("status", "active"),
+                specification_factory=lambda ctx: field_equals("status", "active"),
                 ctx_var="house_is_active"
             ),
             IfElseAction(
