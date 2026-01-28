@@ -36,7 +36,7 @@ def test_add_entity_with_simple_key():
 
     ctx = ProcessContext({"fractal.context": app_context, "entity": entity})
 
-    action = AddEntityAction(repository_name="test_repository", entity="entity")
+    action = AddEntityAction(repository_name="test_repository", ctx_var="entity")
     result = action.execute(ctx)
 
     assert len(app_context.test_repository.entities) == 1
@@ -58,7 +58,9 @@ def test_add_entity_with_dot_notation():
     ctx = ProcessContext({"fractal.context": app_context, "command": command})
 
     # Use dot notation to reference nested entity
-    action = AddEntityAction(repository_name="test_repository", entity="command.entity")
+    action = AddEntityAction(
+        repository_name="test_repository", ctx_var="command.entity"
+    )
     result = action.execute(ctx)
 
     assert len(app_context.test_repository.entities) == 1
@@ -84,7 +86,7 @@ def test_add_entity_with_deep_nesting():
     ctx = ProcessContext({"fractal.context": app_context, "request": request})
 
     action = AddEntityAction(
-        repository_name="test_repository", entity="request.payload.entity"
+        repository_name="test_repository", ctx_var="request.payload.entity"
     )
     result = action.execute(ctx)
 
@@ -100,7 +102,7 @@ def test_update_entity_with_simple_key():
 
     ctx = ProcessContext({"fractal.context": app_context, "entity": entity})
 
-    action = UpdateEntityAction(repository_name="test_repository", entity="entity")
+    action = UpdateEntityAction(repository_name="test_repository", ctx_var="entity")
     result = action.execute(ctx)
 
     assert len(app_context.test_repository.updated_entities) == 1
@@ -123,7 +125,7 @@ def test_update_entity_with_dot_notation():
     ctx = ProcessContext({"fractal.context": app_context, "command": command})
 
     action = UpdateEntityAction(
-        repository_name="test_repository", entity="command.entity", upsert=True
+        repository_name="test_repository", ctx_var="command.entity", upsert=True
     )
     result = action.execute(ctx)
 
@@ -150,7 +152,7 @@ def test_update_entity_with_deep_nesting():
     ctx = ProcessContext({"fractal.context": app_context, "request": request})
 
     action = UpdateEntityAction(
-        repository_name="test_repository", entity="request.payload.entity"
+        repository_name="test_repository", ctx_var="request.payload.entity"
     )
     result = action.execute(ctx)
 
@@ -180,10 +182,12 @@ def test_entity_actions_in_workflow():
             # Set a field on the nested entity
             SetValueAction(target="command.status", source="command.user_id"),
             # Add using dot notation
-            AddEntityAction(repository_name="test_repository", entity="command.entity"),
+            AddEntityAction(
+                repository_name="test_repository", ctx_var="command.entity"
+            ),
             # Update using dot notation
             UpdateEntityAction(
-                repository_name="test_repository", entity="command.entity", upsert=True
+                repository_name="test_repository", ctx_var="command.entity", upsert=True
             ),
         ]
     )

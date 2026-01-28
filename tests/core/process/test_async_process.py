@@ -119,7 +119,7 @@ async def test_async_command_action():
     scope["fractal"] = MockFractal()
 
     result = await action.execute_async(scope)
-    assert result["last_command_result"] == "handled_test"
+    assert result["result"] == "handled_test"
 
 
 def test_async_action_sync_wrapper():

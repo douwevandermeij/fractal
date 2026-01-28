@@ -64,7 +64,7 @@ def test_foreach_custom_item_field():
     action = ForEachAction(
         ["alice", "bob", "charlie"],
         [CollectAction()],
-        item_field="user",  # Custom field name
+        ctx_var="user",  # Custom field name
     )
 
     ctx = ProcessContext()
@@ -139,7 +139,7 @@ def test_foreach_callable_with_repository():
     action = ForEachAction(
         lambda ctx: ctx.fractal["context"].entity_repository.find_all(),
         [ProcessEntityAction()],
-        item_field="entity",
+        ctx_var="entity",
     )
 
     ctx = ProcessContext({"fractal": {"context": MockContext()}})
@@ -158,12 +158,12 @@ def test_foreach_nested_loops():
             results.append((ctx["outer"], ctx["inner"]))
             return ctx
 
-    inner_loop = ForEachAction("inner_items", [CollectPairAction()], item_field="inner")
+    inner_loop = ForEachAction("inner_items", [CollectPairAction()], ctx_var="inner")
 
     outer_loop = ForEachAction(
         ["A", "B"],
         [SetContextVariableAction(inner_items=[1, 2]), inner_loop],
-        item_field="outer",
+        ctx_var="outer",
     )
 
     ctx = ProcessContext()

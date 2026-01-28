@@ -8,6 +8,7 @@ from fractal_specifications.generic.operators import EqualsSpecification
 from fractal.core.process.actions import (
     ApplyToValueAction,
     CommandAction,
+    CreateSpecificationAction,
     FetchEntityAction,
     FindEntitiesAction,
     IncreaseValueAction,
@@ -22,21 +23,23 @@ class TestApplyToValueActionDotNotation:
     def test_apply_to_simple_field(self):
         """Test backward compatibility - simple field without dots."""
         ctx = ProcessContext({"count": 5})
-        action = ApplyToValueAction(field="count", function=lambda x: x * 2)
+        action = ApplyToValueAction(ctx_var="count", function=lambda x: x * 2)
         result = action.execute(ctx)
         assert result["count"] == 10
 
     def test_apply_to_nested_field(self):
         """Test applying function to nested field."""
         ctx = ProcessContext({"stats": {"count": 5}})
-        action = ApplyToValueAction(field="stats.count", function=lambda x: x * 2)
+        action = ApplyToValueAction(ctx_var="stats.count", function=lambda x: x * 2)
         result = action.execute(ctx)
         assert result["stats"]["count"] == 10
 
     def test_apply_to_deeply_nested_field(self):
         """Test applying function to deeply nested field."""
         ctx = ProcessContext({"data": {"stats": {"count": 5}}})
-        action = ApplyToValueAction(field="data.stats.count", function=lambda x: x + 10)
+        action = ApplyToValueAction(
+            ctx_var="data.stats.count", function=lambda x: x + 10
+        )
         result = action.execute(ctx)
         assert result["data"]["stats"]["count"] == 15
 
@@ -44,7 +47,7 @@ class TestApplyToValueActionDotNotation:
         """Test applying dict transformation to nested field."""
         ctx = ProcessContext({"user": {"preferences": {"theme": "light"}}})
         action = ApplyToValueAction(
-            field="user.preferences",
+            ctx_var="user.preferences",
             function=lambda prefs: {**prefs, "theme": "dark", "notifications": True},
         )
         result = action.execute(ctx)
@@ -58,28 +61,28 @@ class TestIncreaseValueActionDotNotation:
     def test_increase_simple_field(self):
         """Test backward compatibility - simple field without dots."""
         ctx = ProcessContext({"count": 5})
-        action = IncreaseValueAction(field="count", value=3)
+        action = IncreaseValueAction(ctx_var="count", value=3)
         result = action.execute(ctx)
         assert result["count"] == 8
 
     def test_increase_nested_field(self):
         """Test increasing nested field."""
         ctx = ProcessContext({"stats": {"views": 10}})
-        action = IncreaseValueAction(field="stats.views", value=1)
+        action = IncreaseValueAction(ctx_var="stats.views", value=1)
         result = action.execute(ctx)
         assert result["stats"]["views"] == 11
 
     def test_increase_deeply_nested_field(self):
         """Test increasing deeply nested field."""
         ctx = ProcessContext({"metrics": {"page": {"views": 100}}})
-        action = IncreaseValueAction(field="metrics.page.views", value=5)
+        action = IncreaseValueAction(ctx_var="metrics.page.views", value=5)
         result = action.execute(ctx)
         assert result["metrics"]["page"]["views"] == 105
 
     def test_increase_negative_value(self):
         """Test decreasing with negative value."""
         ctx = ProcessContext({"stats": {"count": 10}})
-        action = IncreaseValueAction(field="stats.count", value=-3)
+        action = IncreaseValueAction(ctx_var="stats.count", value=-3)
         result = action.execute(ctx)
         assert result["stats"]["count"] == 7
 
@@ -90,7 +93,7 @@ class TestQueryActionDotNotation:
     def test_query_simple_field(self):
         """Test backward compatibility - simple field without dots."""
         ctx = ProcessContext({})
-        action = QueryAction(query_func=lambda ctx: [1, 2, 3], result_field="result")
+        action = QueryAction(query_func=lambda ctx: [1, 2, 3], ctx_var="result")
         result = action.execute(ctx)
         assert result["result"] == [1, 2, 3]
 
@@ -98,7 +101,7 @@ class TestQueryActionDotNotation:
         """Test storing query result in nested field."""
         ctx = ProcessContext({"data": {}})
         action = QueryAction(
-            query_func=lambda ctx: ["user1", "user2"], result_field="data.users"
+            query_func=lambda ctx: ["user1", "user2"], ctx_var="data.users"
         )
         result = action.execute(ctx)
         assert result["data"]["users"] == ["user1", "user2"]
@@ -108,7 +111,7 @@ class TestQueryActionDotNotation:
         ctx = ProcessContext({"response": {"data": {}}})
         action = QueryAction(
             query_func=lambda ctx: {"total": 42},
-            result_field="response.data.summary",
+            ctx_var="response.data.summary",
         )
         result = action.execute(ctx)
         assert result["response"]["data"]["summary"] == {"total": 42}
@@ -118,14 +121,14 @@ class TestQueryActionDotNotation:
         ctx = ProcessContext({})
         action = QueryAction(query_func=lambda ctx: "result_value")
         result = action.execute(ctx)
-        assert result["last_query_result"] == "result_value"
+        assert result["result"] == "result_value"
 
     def test_query_with_context_access(self):
         """Test query function accessing context values."""
         ctx = ProcessContext({"filter": "active"})
         action = QueryAction(
             query_func=lambda ctx: f"filtered_{ctx['filter']}",
-            result_field="data.result",
+            ctx_var="data.result",
         )
         ctx = ProcessContext({"data": {}, "filter": "active"})
         result = action.execute(ctx)
@@ -147,9 +150,17 @@ class TestFetchEntityActionDotNotation:
         mock_fractal.context = mock_context
 
         ctx = ProcessContext({"fractal": mock_fractal})
+
+        # Create specification and store in context
         spec = EqualsSpecification("id", 1)
+        spec_action = CreateSpecificationAction(
+            spec_factory=lambda ctx: spec, ctx_var="user_spec"
+        )
+        ctx = spec_action.execute(ctx)
+
+        # Fetch entity using specification from context
         action = FetchEntityAction(
-            repository_name="user_repository", specification=spec, entity="user"
+            repository_name="user_repository", specification="user_spec", ctx_var="user"
         )
         result = action.execute(ctx)
 
@@ -169,9 +180,19 @@ class TestFetchEntityActionDotNotation:
         mock_fractal.context = mock_context
 
         ctx = ProcessContext({"fractal": mock_fractal, "request": {}})
+
+        # Create specification and store in context
         spec = EqualsSpecification("id", 1)
+        spec_action = CreateSpecificationAction(
+            spec_factory=lambda ctx: spec, ctx_var="user_spec"
+        )
+        ctx = spec_action.execute(ctx)
+
+        # Fetch entity using specification from context
         action = FetchEntityAction(
-            repository_name="user_repository", specification=spec, entity="request.user"
+            repository_name="user_repository",
+            specification="user_spec",
+            ctx_var="request.user",
         )
         result = action.execute(ctx)
 
@@ -190,11 +211,19 @@ class TestFetchEntityActionDotNotation:
         mock_fractal.context = mock_context
 
         ctx = ProcessContext({"fractal": mock_fractal, "request": {"data": {}}})
+
+        # Create specification and store in context
         spec = EqualsSpecification("user_id", 1)
+        spec_action = CreateSpecificationAction(
+            spec_factory=lambda ctx: spec, ctx_var="profile_spec"
+        )
+        ctx = spec_action.execute(ctx)
+
+        # Fetch entity using specification from context
         action = FetchEntityAction(
             repository_name="profile_repository",
-            specification=spec,
-            entity="request.data.profile",
+            specification="profile_spec",
+            ctx_var="request.data.profile",
         )
         result = action.execute(ctx)
 
@@ -216,9 +245,19 @@ class TestFindEntitiesActionDotNotation:
         mock_fractal.context = mock_context
 
         ctx = ProcessContext({"fractal": mock_fractal})
+
+        # Create specification and store in context
         spec = EqualsSpecification("status", "active")
+        spec_action = CreateSpecificationAction(
+            spec_factory=lambda ctx: spec, ctx_var="status_spec"
+        )
+        ctx = spec_action.execute(ctx)
+
+        # Find entities using specification from context
         action = FindEntitiesAction(
-            repository_name="user_repository", specification=spec, entities="users"
+            repository_name="user_repository",
+            specification="status_spec",
+            ctx_var="users",
         )
         result = action.execute(ctx)
 
@@ -238,9 +277,19 @@ class TestFindEntitiesActionDotNotation:
         mock_fractal.context = mock_context
 
         ctx = ProcessContext({"fractal": mock_fractal, "data": {}})
+
+        # Create specification and store in context
         spec = EqualsSpecification("status", "active")
+        spec_action = CreateSpecificationAction(
+            spec_factory=lambda ctx: spec, ctx_var="status_spec"
+        )
+        ctx = spec_action.execute(ctx)
+
+        # Find entities using specification from context
         action = FindEntitiesAction(
-            repository_name="user_repository", specification=spec, entities="data.users"
+            repository_name="user_repository",
+            specification="status_spec",
+            ctx_var="data.users",
         )
         result = action.execute(ctx)
 
@@ -259,7 +308,7 @@ class TestFindEntitiesActionDotNotation:
 
         ctx = ProcessContext({"fractal": mock_fractal, "response": {}})
         action = FindEntitiesAction(
-            repository_name="item_repository", entities="response.items"
+            repository_name="item_repository", ctx_var="response.items"
         )
         result = action.execute(ctx)
 
@@ -286,8 +335,8 @@ class TestCommandActionDotNotation:
         action = CommandAction(command_factory=lambda ctx: mock_command)
         result = action.execute(ctx)
 
-        assert result["last_command_result"]["success"] is True
-        assert result["last_command_result"]["id"] == 123
+        assert result["result"]["success"] is True
+        assert result["result"]["id"] == 123
 
     def test_command_simple_field(self):
         """Test storing command result in custom simple field."""
@@ -303,7 +352,7 @@ class TestCommandActionDotNotation:
         ctx = ProcessContext({"fractal": mock_fractal})
         mock_command = Mock()
         action = CommandAction(
-            command_factory=lambda ctx: mock_command, result_field="result"
+            command_factory=lambda ctx: mock_command, ctx_var="result"
         )
         result = action.execute(ctx)
 
@@ -323,7 +372,7 @@ class TestCommandActionDotNotation:
         ctx = ProcessContext({"fractal": mock_fractal, "command": {}})
         mock_command = Mock()
         action = CommandAction(
-            command_factory=lambda ctx: mock_command, result_field="command.result"
+            command_factory=lambda ctx: mock_command, ctx_var="command.result"
         )
         result = action.execute(ctx)
 
@@ -344,7 +393,7 @@ class TestCommandActionDotNotation:
         ctx = ProcessContext({"fractal": mock_fractal, "user_name": "Alice"})
         action = CommandAction(
             command_factory=lambda ctx: mock_command_class(name=ctx["user_name"]),
-            result_field="data.result",
+            ctx_var="data.result",
         )
         ctx = ProcessContext(
             {"fractal": mock_fractal, "data": {}, "user_name": "Alice"}
@@ -388,33 +437,40 @@ class TestCompleteWorkflow:
         # 1. Find entities into nested field
         action1 = FindEntitiesAction(
             repository_name="user_repository",
-            entities="data.users",
+            ctx_var="data.users",
         )
         ctx = action1.execute(ctx)
 
-        # 2. Fetch entity into nested field
+        # 2. Create specification for fetch
+        spec = EqualsSpecification("id", 1)
+        spec_action = CreateSpecificationAction(
+            spec_factory=lambda ctx: spec, ctx_var="fetch_spec"
+        )
+        ctx = spec_action.execute(ctx)
+
+        # 3. Fetch entity into nested field
         action2 = FetchEntityAction(
             repository_name="user_repository",
-            specification=EqualsSpecification("id", 1),
-            entity="request.user",
+            specification="fetch_spec",
+            ctx_var="request.user",
         )
         ctx = action2.execute(ctx)
 
-        # 3. Query into nested field
+        # 4. Query into nested field
         action3 = QueryAction(
             query_func=lambda c: {"total": len(c["data"]["users"])},
-            result_field="data.summary",
+            ctx_var="data.summary",
         )
         ctx = action3.execute(ctx)
 
-        # 4. Increase nested counter
-        action4 = IncreaseValueAction(field="stats.views", value=1)
+        # 5. Increase nested counter
+        action4 = IncreaseValueAction(ctx_var="stats.views", value=1)
         ctx = action4.execute(ctx)
 
-        # 5. Command into nested field
+        # 6. Command into nested field
         action5 = CommandAction(
             command_factory=lambda c: Mock(),
-            result_field="request.command_result",
+            ctx_var="request.command_result",
         )
         ctx = action5.execute(ctx)
 
@@ -437,18 +493,18 @@ class TestCompleteWorkflow:
 
         # Apply transformation to nested dict
         action1 = ApplyToValueAction(
-            field="user.profile",
+            ctx_var="user.profile",
             function=lambda p: {**p, "views": p["views"] + 1},
         )
         ctx = action1.execute(ctx)
 
         # Increase nested value
-        action2 = IncreaseValueAction(field="stats.total", value=50)
+        action2 = IncreaseValueAction(ctx_var="stats.total", value=50)
         ctx = action2.execute(ctx)
 
         # Apply to deeply nested value
         action3 = ApplyToValueAction(
-            field="user.profile.likes",
+            ctx_var="user.profile.likes",
             function=lambda x: x * 2,
         )
         ctx = action3.execute(ctx)
@@ -473,7 +529,7 @@ try:
             async def async_query(ctx):
                 return [1, 2, 3]
 
-            action = AsyncQueryAction(query_func=async_query, result_field="result")
+            action = AsyncQueryAction(query_func=async_query, ctx_var="result")
             result = await action.execute_async(ctx)
             assert result["result"] == [1, 2, 3]
 
@@ -485,7 +541,7 @@ try:
             async def async_query(ctx):
                 return ["user1", "user2"]
 
-            action = AsyncQueryAction(query_func=async_query, result_field="data.users")
+            action = AsyncQueryAction(query_func=async_query, ctx_var="data.users")
             result = await action.execute_async(ctx)
             assert result["data"]["users"] == ["user1", "user2"]
 
@@ -499,7 +555,7 @@ try:
 
             action = AsyncQueryAction(query_func=async_query)
             result = await action.execute_async(ctx)
-            assert result["last_query_result"] == "async_result"
+            assert result["result"] == "async_result"
 
     class TestAsyncCommandActionDotNotation:
         """Test AsyncCommandAction with dot notation support."""
@@ -523,8 +579,8 @@ try:
             action = AsyncCommandAction(command_factory=lambda ctx: mock_command)
             result = await action.execute_async(ctx)
 
-            assert result["last_command_result"]["success"] is True
-            assert result["last_command_result"]["id"] == 789
+            assert result["result"]["success"] is True
+            assert result["result"]["id"] == 789
 
         @pytest.mark.asyncio
         async def test_async_command_nested_field(self):
@@ -542,7 +598,7 @@ try:
             mock_command = Mock()
             action = AsyncCommandAction(
                 command_factory=lambda ctx: mock_command,
-                result_field="async.command_result",
+                ctx_var="async.command_result",
             )
             result = await action.execute_async(ctx)
 

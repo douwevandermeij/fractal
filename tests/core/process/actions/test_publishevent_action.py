@@ -126,7 +126,7 @@ def test_publishevent_with_command_handler_pattern():
     """Test PublishEventAction in a command handler pattern."""
     from fractal_specifications.generic.specification import Specification
 
-    from fractal.core.process.actions import SetValueAction
+    from fractal.core.process.actions import CreateSpecificationAction, SetValueAction
     from fractal.core.process.actions.control_flow import IfElseAction
     from fractal.core.process.process import Process
     from fractal.core.process.specifications import on_field
@@ -163,8 +163,14 @@ def test_publishevent_with_command_handler_pattern():
     # Command handler workflow
     process = Process(
         [
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: on_field(
+                    "command.entity", ctx.command.get_specification()
+                ),
+                ctx_var="entity_spec",
+            ),
             IfElseAction(
-                specification=on_field("command.entity", command.get_specification()),
+                specification="entity_spec",
                 actions_true=[
                     # Set audit field
                     SetValueAction(
@@ -182,7 +188,7 @@ def test_publishevent_with_command_handler_pattern():
                         )
                     ),
                 ],
-            )
+            ),
         ]
     )
 

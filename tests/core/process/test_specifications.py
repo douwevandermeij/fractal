@@ -232,14 +232,24 @@ def test_specification_composition_complex():
 
 def test_specification_with_ifelse_action():
     """Test using specifications with IfElseAction."""
-    from fractal.core.process.actions import SetContextVariableAction
+    from fractal.core.process.actions import (
+        CreateSpecificationAction,
+        SetContextVariableAction,
+    )
     from fractal.core.process.actions.control_flow import IfElseAction
+    from fractal.core.process.process import Process
 
     spec = has_field("house") & field_equals("house.status", "active")
-    action = IfElseAction(
-        specification=spec,
-        actions_true=[SetContextVariableAction(result="house is active")],
-        actions_false=[SetContextVariableAction(result="house not active")],
+
+    process = Process(
+        [
+            CreateSpecificationAction(spec_factory=lambda ctx: spec, ctx_var="check"),
+            IfElseAction(
+                specification="check",
+                actions_true=[SetContextVariableAction(result="house is active")],
+                actions_false=[SetContextVariableAction(result="house not active")],
+            ),
+        ]
     )
 
     house1 = House(status="active", price=100000)
@@ -249,9 +259,9 @@ def test_specification_with_ifelse_action():
     scope2 = ProcessContext({"house": house2})
     scope3 = ProcessContext({})
 
-    result1 = action.execute(scope1)
-    result2 = action.execute(scope2)
-    result3 = action.execute(scope3)
+    result1 = process.run(scope1)
+    result2 = process.run(scope2)
+    result3 = process.run(scope3)
 
     assert result1["result"] == "house is active"
     assert result2["result"] == "house not active"

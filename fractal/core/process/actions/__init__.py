@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable
 
 from fractal_specifications.generic.specification import Specification
 
@@ -171,28 +171,28 @@ class ApplyToValueAction(Action):
 
     Example:
         # Apply function to simple field
-        ApplyToValueAction(field="count", function=lambda x: x * 2)
+        ApplyToValueAction(ctx_var="count", function=lambda x: x * 2)
 
         # Apply function to nested field
-        ApplyToValueAction(field="user.preferences", function=lambda prefs: {**prefs, "theme": "dark"})
+        ApplyToValueAction(ctx_var="user.preferences", function=lambda prefs: {**prefs, "theme": "dark"})
     """
 
-    def __init__(self, *, field: str, function: Callable):
+    def __init__(self, *, ctx_var: str, function: Callable):
         """
         Args:
-            field: Field name (supports dot notation, e.g., "user.preferences")
+            ctx_var: Context variable name (supports dot notation, e.g., "user.preferences")
             function: Function to apply to the field value
         """
-        self.field = field
+        self.ctx_var = ctx_var
         self.function = function
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         # Read with dot notation support
-        current_value = _get_nested_value(ctx, self.field)
+        current_value = _get_nested_value(ctx, self.ctx_var)
         # Apply function
         new_value = self.function(current_value)
         # Write with dot notation support
-        _set_nested(ctx, self.field, new_value)
+        _set_nested(ctx, self.ctx_var, new_value)
         return ctx
 
 
@@ -239,6 +239,62 @@ class PublishEventAction(Action):
         return ctx
 
 
+class CreateSpecificationAction(Action):
+    """Create a specification using a factory function and store it in context.
+
+    This action allows specifications to be created dynamically at runtime based on
+    context values. The specification is created using a factory function that receives
+    the ProcessContext and returns a Specification object.
+
+    Example:
+        # Simple specification
+        CreateSpecificationAction(
+            spec_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"]),
+            ctx_var="user_spec"
+        )
+
+        # Complex specification using context values
+        CreateSpecificationAction(
+            spec_factory=lambda ctx: (
+                EqualsSpecification("status", ctx["filter_status"]) &
+                GreaterThanSpecification("price", ctx["min_price"])
+            ),
+            ctx_var="house_filter"
+        )
+
+        # Specification from command
+        CreateSpecificationAction(
+            spec_factory=lambda ctx: ctx.command.get_specification(),
+            ctx_var="validation_spec"
+        )
+
+        # Using default ctx_var
+        CreateSpecificationAction(
+            spec_factory=lambda ctx: EqualsSpecification("id", 1)
+            # Stores in "specification" by default
+        )
+    """
+
+    def __init__(
+        self,
+        *,
+        spec_factory: Callable[[ProcessContext], Specification],
+        ctx_var: str = "specification",
+    ):
+        """
+        Args:
+            spec_factory: Callable that takes ProcessContext and returns a Specification
+            ctx_var: Context variable name to store the specification (default: "specification")
+        """
+        self.spec_factory = spec_factory
+        self.ctx_var = ctx_var
+
+    def execute(self, ctx: ProcessContext) -> ProcessContext:
+        spec = self.spec_factory(ctx)
+        _set_nested(ctx, self.ctx_var, spec)
+        return ctx
+
+
 class IncreaseValueAction(Action):
     """Increase a numeric field value by a given amount.
 
@@ -246,29 +302,98 @@ class IncreaseValueAction(Action):
 
     Example:
         # Increase simple field
-        IncreaseValueAction(field="count", value=1)
+        IncreaseValueAction(ctx_var="count", value=1)
 
         # Increase nested field
-        IncreaseValueAction(field="stats.page_views", value=1)
+        IncreaseValueAction(ctx_var="stats.page_views", value=1)
     """
 
-    def __init__(self, *, field: str, value):
+    def __init__(self, *, ctx_var: str, value):
         """
         Args:
-            field: Field name (supports dot notation, e.g., "stats.count")
+            ctx_var: Context variable name (supports dot notation, e.g., "stats.count")
             value: Value to add to the field
         """
-        self.field = field
+        self.ctx_var = ctx_var
         self.value = value
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         # Read with dot notation support
-        current_value = _get_nested_value(ctx, self.field)
+        current_value = _get_nested_value(ctx, self.ctx_var)
         # Add value
         new_value = current_value + self.value
         # Write with dot notation support
-        _set_nested(ctx, self.field, new_value)
+        _set_nested(ctx, self.ctx_var, new_value)
         return ctx
+
+
+class RaiseExceptionAction(Action):
+    """Raise an exception with a static or dynamic message.
+
+    This action allows raising exceptions within a Process workflow, useful for
+    validation failures, error conditions, or aborting workflows.
+
+    Example:
+        # Static message
+        RaiseExceptionAction(
+            exception_class=ValueError,
+            message="Invalid input"
+        )
+
+        # Dynamic message from context
+        RaiseExceptionAction(
+            exception_class=ValidationError,
+            message_factory=lambda ctx: f"User {ctx['user_id']} failed validation"
+        )
+
+        # Both message and message_factory (factory takes precedence)
+        RaiseExceptionAction(
+            exception_class=ValueError,
+            message="Default error",
+            message_factory=lambda ctx: f"Error: {ctx['error_details']}" if 'error_details' in ctx else None
+        )
+
+        # Default exception class (Exception)
+        RaiseExceptionAction(message="Something went wrong")
+
+        # No message
+        RaiseExceptionAction(exception_class=StopIteration)
+    """
+
+    def __init__(
+        self,
+        *,
+        exception_class: type = Exception,
+        message: str = None,
+        message_factory: Callable[[ProcessContext], str] = None,
+    ):
+        """
+        Args:
+            exception_class: The exception class to raise (default: Exception)
+            message: Static error message (optional)
+            message_factory: Function that takes ProcessContext and returns error message (optional)
+                           If both message and message_factory are provided, message_factory takes precedence.
+                           If message_factory returns None, falls back to message.
+        """
+        self.exception_class = exception_class
+        self.message = message
+        self.message_factory = message_factory
+
+    def execute(self, ctx: ProcessContext) -> ProcessContext:
+        # Determine the message
+        if self.message_factory:
+            dynamic_message = self.message_factory(ctx)
+            final_message = (
+                dynamic_message if dynamic_message is not None else self.message
+            )
+        else:
+            final_message = self.message
+
+        # Raise the exception
+        if final_message:
+            raise self.exception_class(final_message)
+        else:
+            raise self.exception_class()
 
 
 class PrintAction(Action):
@@ -281,37 +406,88 @@ class PrintAction(Action):
 
 
 class PrintValueAction(Action):
-    def __init__(self, *, field: str):
-        self.field = field
+    """Print a value from the context.
+
+    Example:
+        # Print simple field
+        PrintValueAction(ctx_var="user_name")
+
+        # Print nested field (requires _get_nested_value for dot notation support)
+        PrintValueAction(ctx_var="user.email")
+    """
+
+    def __init__(self, *, ctx_var: str):
+        """
+        Args:
+            ctx_var: Context variable name to print
+        """
+        self.ctx_var = ctx_var
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        print(ctx[self.field])
+        print(ctx[self.ctx_var])
         return ctx
 
 
 class AddEntityAction(Action):
-    def __init__(self, *, repository_name: str, entity: str = "entity"):
+    """Add an entity to a repository.
+
+    Reads the entity from the specified context variable and adds it to the repository.
+    Supports dot notation for reading nested entity values.
+
+    Example:
+        # Add entity from simple context variable
+        AddEntityAction(repository_name="user_repository", ctx_var="user")
+
+        # Add entity from nested context variable
+        AddEntityAction(repository_name="user_repository", ctx_var="request.user")
+    """
+
+    def __init__(self, *, repository_name: str, ctx_var: str = "entity"):
+        """
+        Args:
+            repository_name: Name of repository in ApplicationContext
+            ctx_var: Context variable name to read entity from (supports dot notation, default: "entity")
+        """
         self.repository_name = repository_name
-        self.entity = entity
+        self.ctx_var = ctx_var
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
-        entity_value = _get_nested_value(ctx, self.entity)
+        entity_value = _get_nested_value(ctx, self.ctx_var)
         repository.add(entity_value)
         return ctx
 
 
 class UpdateEntityAction(Action):
+    """Update an entity in a repository.
+
+    Reads the entity from the specified context variable and updates it in the repository.
+    Supports dot notation for reading nested entity values.
+
+    Example:
+        # Update entity from simple context variable
+        UpdateEntityAction(repository_name="user_repository", ctx_var="user")
+
+        # Update entity from nested context variable
+        UpdateEntityAction(repository_name="user_repository", ctx_var="request.user", upsert=True)
+    """
+
     def __init__(
-        self, *, repository_name: str, entity: str = "entity", upsert: bool = False
+        self, *, repository_name: str, ctx_var: str = "entity", upsert: bool = False
     ):
+        """
+        Args:
+            repository_name: Name of repository in ApplicationContext
+            ctx_var: Context variable name to read entity from (supports dot notation, default: "entity")
+            upsert: If True, insert entity if it doesn't exist (default: False)
+        """
         self.repository_name = repository_name
-        self.entity = entity
+        self.ctx_var = ctx_var
         self.upsert = upsert
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
-        entity_value = _get_nested_value(ctx, self.entity)
+        entity_value = _get_nested_value(ctx, self.ctx_var)
         repository.update(entity_value, upsert=self.upsert)
         return ctx
 
@@ -319,85 +495,213 @@ class UpdateEntityAction(Action):
 class FetchEntityAction(Action):
     """Fetch a single entity from a repository and store it in context.
 
-    Supports dot notation for the entity storage field.
+    The specification parameter supports both:
+    - Specification object (backward compatible, will be deprecated)
+    - String context variable name (new pattern, recommended)
+
+    Supports dot notation for both the specification and entity storage fields.
 
     Example:
-        # Store in simple field
-        FetchEntityAction(repository_name="user_repository", specification=user_spec, entity="user")
+        # New pattern (recommended) - using default "specification" variable
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"])
+            ),
+            FetchEntityAction(repository_name="user_repository", ctx_var="user")
+        ])
 
-        # Store in nested field
-        FetchEntityAction(repository_name="user_repository", specification=user_spec, entity="request.user")
+        # New pattern - using custom specification variable
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: EqualsSpecification("id", 1),
+                ctx_var="user_spec"
+            ),
+            FetchEntityAction(
+                repository_name="user_repository",
+                specification="user_spec",
+                ctx_var="user"
+            )
+        ])
+
+        # Old pattern (still works, but deprecated)
+        FetchEntityAction(
+            repository_name="user_repository",
+            specification=EqualsSpecification("id", 1),
+            ctx_var="user"
+        )
     """
 
     def __init__(
         self,
         *,
         repository_name: str,
-        specification: Specification,
-        entity: str = "entity",
+        specification="specification",
+        ctx_var: str = "entity",
     ):
         """
         Args:
             repository_name: Name of repository in ApplicationContext
-            specification: Specification to match entity
-            entity: Field name to store entity (supports dot notation, default: "entity")
+            specification: Either a Specification object (deprecated) or context variable name (str)
+                         (default: "specification")
+            ctx_var: Context variable name to store entity (supports dot notation, default: "entity")
         """
         self.repository_name = repository_name
         self.specification = specification
-        self.entity = entity
+        self.ctx_var = ctx_var
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
-        result = repository.find_one(self.specification)
-        _set_nested(ctx, self.entity, result)
+
+        # Support both string (new) and Specification object (old, deprecated)
+        if isinstance(self.specification, str):
+            spec = _get_nested_value(ctx, self.specification)
+        else:
+            # Backward compatibility: direct Specification object
+            spec = self.specification
+
+        result = repository.find_one(spec)
+        _set_nested(ctx, self.ctx_var, result)
         return ctx
 
 
 class FindEntitiesAction(Action):
     """Find multiple entities from a repository and store them in context.
 
-    Supports dot notation for the entities storage field.
+    The specification parameter supports both:
+    - Specification object (backward compatible, will be deprecated)
+    - String context variable name (new pattern, recommended)
+    - None (finds all entities)
+
+    Supports dot notation for both the specification and entities storage fields.
 
     Example:
-        # Store in simple field
-        FindEntitiesAction(repository_name="user_repository", specification=active_spec, entities="users")
+        # Find all entities (no filter)
+        FindEntitiesAction(repository_name="user_repository", ctx_var="users")
 
-        # Store in nested field
-        FindEntitiesAction(repository_name="user_repository", specification=active_spec, entities="data.users")
+        # New pattern - using default "specification" variable
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: EqualsSpecification("status", "active")
+            ),
+            FindEntitiesAction(repository_name="user_repository", specification="specification", ctx_var="users")
+        ])
+
+        # New pattern - using custom specification variable
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: GreaterThanSpecification("age", 18),
+                ctx_var="age_filter"
+            ),
+            FindEntitiesAction(
+                repository_name="user_repository",
+                specification="age_filter",
+                ctx_var="users"
+            )
+        ])
+
+        # Old pattern (still works, but deprecated)
+        FindEntitiesAction(
+            repository_name="user_repository",
+            specification=EqualsSpecification("status", "active"),
+            ctx_var="users"
+        )
     """
 
     def __init__(
         self,
         *,
         repository_name: str,
-        specification: Optional[Specification] = None,
-        entities: str = "entities",
+        specification=None,
+        ctx_var: str = "entities",
     ):
         """
         Args:
             repository_name: Name of repository in ApplicationContext
-            specification: Optional specification to filter entities
-            entities: Field name to store entities list (supports dot notation, default: "entities")
+            specification: Either a Specification object (deprecated), context variable name (str),
+                         or None (finds all). Default: None
+            ctx_var: Context variable name to store entities list (supports dot notation, default: "entities")
+
+        Note: If specification is None, finds all entities (no filter).
         """
         self.repository_name = repository_name
         self.specification = specification
-        self.entities = entities
+        self.ctx_var = ctx_var
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
-        result = repository.find(self.specification)
-        _set_nested(ctx, self.entities, result)
+
+        # Support both string (new), Specification object (old), and None
+        if self.specification is None:
+            spec = None
+        elif isinstance(self.specification, str):
+            spec = _get_nested_value(ctx, self.specification)
+        else:
+            # Backward compatibility: direct Specification object
+            spec = self.specification
+
+        result = repository.find(spec)
+        _set_nested(ctx, self.ctx_var, result)
         return ctx
 
 
 class DeleteEntityAction(Action):
-    def __init__(self, *, repository_name: str, specification: Specification):
+    """Delete a single entity from a repository using a specification.
+
+    The specification parameter supports both:
+    - Specification object (backward compatible, will be deprecated)
+    - String context variable name (new pattern, recommended)
+
+    Supports dot notation for the specification field.
+
+    Example:
+        # New pattern - using default "specification" variable
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"])
+            ),
+            DeleteEntityAction(repository_name="user_repository")
+        ])
+
+        # New pattern - using custom specification variable
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: EqualsSpecification("id", 1),
+                ctx_var="delete_spec"
+            ),
+            DeleteEntityAction(
+                repository_name="user_repository",
+                specification="delete_spec"
+            )
+        ])
+
+        # Old pattern (still works, but deprecated)
+        DeleteEntityAction(
+            repository_name="user_repository",
+            specification=EqualsSpecification("id", 1)
+        )
+    """
+
+    def __init__(self, *, repository_name: str, specification="specification"):
+        """
+        Args:
+            repository_name: Name of repository in ApplicationContext
+            specification: Either a Specification object (deprecated) or context variable name (str)
+                         (default: "specification")
+        """
         self.repository_name = repository_name
         self.specification = specification
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
-        repository.remove_one(self.specification)
+
+        # Support both string (new) and Specification object (old, deprecated)
+        if isinstance(self.specification, str):
+            spec = _get_nested_value(ctx, self.specification)
+        else:
+            # Backward compatibility: direct Specification object
+            spec = self.specification
+
+        repository.remove_one(spec)
         return ctx
 
 
@@ -413,26 +717,24 @@ class CommandAction(Action):
         # Store result in nested field
         CommandAction(
             lambda ctx: CreateUserCommand(name=ctx.user_name),
-            result_field="command.result"
+            ctx_var="command.result"
         )
     """
 
-    def __init__(
-        self, command_factory: Callable, result_field: str = "last_command_result"
-    ):
+    def __init__(self, command_factory: Callable, ctx_var: str = "result"):
         """
         Args:
             command_factory: Callable that takes ProcessContext and returns Command.
                            Can access ctx.fractal.context for ApplicationContext.
-            result_field: Field name to store command result (supports dot notation, default: "last_command_result")
+            ctx_var: Context variable name to store command result (supports dot notation, default: "result")
         """
         self.command_factory = command_factory
-        self.result_field = result_field
+        self.ctx_var = ctx_var
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         command = self.command_factory(ctx)
         result = ctx.fractal.context.command_bus.handle(command)
-        _set_nested(ctx, self.result_field, result)
+        _set_nested(ctx, self.ctx_var, result)
         return ctx
 
 
@@ -449,18 +751,18 @@ class QueryAction(Action):
         QueryAction(lambda ctx: fetch_users(), "data.users")
     """
 
-    def __init__(self, query_func: Callable, result_field: str = "last_query_result"):
+    def __init__(self, query_func: Callable, ctx_var: str = "result"):
         """
         Args:
             query_func: Callable that takes ProcessContext and returns result
-            result_field: Field name to store result in context (supports dot notation, default: "last_query_result")
+            ctx_var: Context variable name to store result (supports dot notation, default: "result")
         """
         self.query_func = query_func
-        self.result_field = result_field
+        self.ctx_var = ctx_var
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         result = self.query_func(ctx)
-        _set_nested(ctx, self.result_field, result)
+        _set_nested(ctx, self.ctx_var, result)
         return ctx
 
 
@@ -484,25 +786,23 @@ try:
             # Store result in nested field
             AsyncCommandAction(
                 lambda ctx: CreateHouseCommand(name=ctx.house_name),
-                result_field="command.result"
+                ctx_var="command.result"
             )
         """
 
-        def __init__(
-            self, command_factory: Callable, result_field: str = "last_command_result"
-        ):
+        def __init__(self, command_factory: Callable, ctx_var: str = "result"):
             """
             Args:
                 command_factory: Callable that takes ProcessContext and returns Command
-                result_field: Field name to store command result (supports dot notation, default: "last_command_result")
+                ctx_var: Context variable name to store command result (supports dot notation, default: "result")
             """
             self.command_factory = command_factory
-            self.result_field = result_field
+            self.ctx_var = ctx_var
 
         async def execute_async(self, ctx: ProcessContext) -> ProcessContext:
             command = self.command_factory(ctx)
             result = await ctx.fractal.context.command_bus.handle_async(command)
-            _set_nested(ctx, self.result_field, result)
+            _set_nested(ctx, self.ctx_var, result)
             return ctx
 
     class AsyncQueryAction(AsyncAction):
@@ -524,20 +824,18 @@ try:
             )
         """
 
-        def __init__(
-            self, query_func: Callable, result_field: str = "last_query_result"
-        ):
+        def __init__(self, query_func: Callable, ctx_var: str = "result"):
             """
             Args:
                 query_func: Async callable that takes ProcessContext and returns result
-                result_field: Field name to store result in context (supports dot notation, default: "last_query_result")
+                ctx_var: Context variable name to store result (supports dot notation, default: "result")
             """
             self.query_func = query_func
-            self.result_field = result_field
+            self.ctx_var = ctx_var
 
         async def execute_async(self, ctx: ProcessContext) -> ProcessContext:
             result = await self.query_func(ctx)
-            _set_nested(ctx, self.result_field, result)
+            _set_nested(ctx, self.ctx_var, result)
             return ctx
 
 except ImportError:

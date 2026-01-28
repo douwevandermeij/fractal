@@ -2,7 +2,10 @@
 
 import pytest
 
-from fractal.core.process.actions import SetContextVariableAction
+from fractal.core.process.actions import (
+    CreateSpecificationAction,
+    SetContextVariableAction,
+)
 from fractal.core.process.actions.control_flow import IfElseAction, SubProcessAction
 from fractal.core.process.process import Process
 from fractal.core.process.process_context import ProcessContext
@@ -75,8 +78,12 @@ def test_subprocess_with_conditional():
     main_process = Process(
         [
             SetContextVariableAction(needs_validation=True),
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: field_equals("needs_validation", True),
+                ctx_var="validation_check",
+            ),
             IfElseAction(
-                specification=field_equals("needs_validation", True),
+                specification="validation_check",
                 actions_true=[SubProcessAction(expensive_validation)],
             ),
         ]

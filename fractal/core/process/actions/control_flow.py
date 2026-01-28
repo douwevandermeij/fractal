@@ -1,38 +1,169 @@
 from typing import Callable, Iterable, List, Optional, Union
 
-from fractal_specifications.generic.specification import Specification
-
 from fractal.core.process.action import Action
 from fractal.core.process.process import Process
 from fractal.core.process.process_context import ProcessContext
 
 
+def _get_nested_value(ctx, field: str):
+    """Get nested field value using dot notation.
+
+    Args:
+        ctx: ProcessContext or object to navigate
+        field: Field name, can use dot notation for nested access (e.g., "user.email")
+
+    Returns:
+        Field value
+
+    Raises:
+        KeyError: If field is not found or is None during navigation
+    """
+    value = ctx
+    for part in field.split("."):
+        if hasattr(value, "get"):
+            value = value.get(part)
+        elif hasattr(value, part):
+            value = getattr(value, part)
+        else:
+            raise KeyError(f"Field '{field}' not found in context")
+        if value is None:
+            raise KeyError(f"Field '{field}' is None")
+    return value
+
+
 class IfElseAction(Action):
+    """Execute actions conditionally based on a specification.
+
+    The specification parameter supports both:
+    - Specification object (backward compatible, will be deprecated)
+    - String context variable name (new pattern, recommended)
+
+    Example:
+        # New pattern - using default "specification" variable
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: EqualsSpecification("status", "active")
+            ),
+            IfElseAction(
+                actions_true=[...],
+                actions_false=[...]
+            )
+        ])
+
+        # New pattern - using custom specification variable
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: GreaterThanSpecification("count", 10),
+                ctx_var="count_check"
+            ),
+            IfElseAction(
+                actions_true=[...],
+                actions_false=[...],
+                specification="count_check"
+            )
+        ])
+
+        # Old pattern (still works, but deprecated)
+        IfElseAction(
+            specification=EqualsSpecification("status", "active"),
+            actions_true=[...],
+            actions_false=[...]
+        )
+    """
+
     def __init__(
         self,
-        specification: Specification,
         actions_true: List[Action],
         actions_false: Optional[List[Action]] = None,
+        specification="specification",
     ):
+        """
+        Args:
+            actions_true: Actions to execute if specification is satisfied
+            actions_false: Actions to execute if specification is not satisfied (optional)
+            specification: Either a Specification object (deprecated) or context variable name (str)
+                         (default: "specification")
+        """
         self.specification = specification
         self.process_true = Process(actions_true)
         self.process_false = Process(actions_false) if actions_false else None
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        if self.specification.is_satisfied_by(ctx):
-            ctx.update(self.process_true.run(ctx))
+        # Support both string (new) and Specification object (old, deprecated)
+        if isinstance(self.specification, str):
+            spec = _get_nested_value(ctx, self.specification)
+        else:
+            # Backward compatibility: direct Specification object
+            spec = self.specification
+
+        if spec.is_satisfied_by(ctx):
+            if self.process_true:
+                ctx.update(self.process_true.run(ctx))
         elif self.process_false:
             ctx.update(self.process_false.run(ctx))
         return ctx
 
 
 class WhileAction(Action):
-    def __init__(self, specification: Specification, actions: List[Action]):
+    """Execute actions repeatedly while a specification is satisfied.
+
+    The specification parameter supports both:
+    - Specification object (backward compatible, will be deprecated)
+    - String context variable name (new pattern, recommended)
+
+    Example:
+        # New pattern - using default "specification" variable
+        Process([
+            SetContextVariableAction(count=0),
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: LessThanSpecification("count", 5)
+            ),
+            WhileAction(
+                actions=[
+                    IncreaseValueAction(ctx_var="count", value=1),
+                    PrintValueAction(ctx_var="count")
+                ]
+            )
+        ])
+
+        # New pattern - using custom specification variable
+        Process([
+            CreateSpecificationAction(
+                spec_factory=lambda ctx: GreaterThanSpecification("items_left", 0),
+                ctx_var="has_items"
+            ),
+            WhileAction(
+                actions=[...],
+                specification="has_items"
+            )
+        ])
+
+        # Old pattern (still works, but deprecated)
+        WhileAction(
+            specification=LessThanSpecification("count", 5),
+            actions=[...]
+        )
+    """
+
+    def __init__(self, actions: List[Action], specification="specification"):
+        """
+        Args:
+            actions: Actions to execute while specification is satisfied
+            specification: Either a Specification object (deprecated) or context variable name (str)
+                         (default: "specification")
+        """
         self.specification = specification
         self.process = Process(actions)
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        while self.specification.is_satisfied_by(ctx):
+        # Support both string (new) and Specification object (old, deprecated)
+        if isinstance(self.specification, str):
+            spec = _get_nested_value(ctx, self.specification)
+        else:
+            # Backward compatibility: direct Specification object
+            spec = self.specification
+
+        while spec.is_satisfied_by(ctx):
             ctx.update(self.process.run(ctx))
         return ctx
 
@@ -44,7 +175,7 @@ class ForEachAction(Action):
 
     Examples:
         # Static iterable
-        ForEachAction([1, 2, 3], [PrintValueAction(field="item")])
+        ForEachAction([1, 2, 3], [PrintValueAction(ctx_var="item")])
 
         # Dynamic lookup from context field
         ForEachAction("entities", [ProcessEntityAction()])
@@ -60,7 +191,7 @@ class ForEachAction(Action):
         self,
         iterable: Union[Iterable, str, Callable[[ProcessContext], Iterable]],
         actions: List[Action],
-        item_field: str = "item",
+        ctx_var: str = "item",
     ):
         """Initialize ForEachAction.
 
@@ -70,11 +201,11 @@ class ForEachAction(Action):
                 - String field name to lookup in context
                 - Callable that takes context and returns iterable
             actions: Actions to execute for each item
-            item_field: Field name to store current item (default: "item")
+            ctx_var: Context variable name to store current item (default: "item")
         """
         self.iterable = iterable
         self.process = Process(actions)
-        self.item_field = item_field
+        self.ctx_var = ctx_var
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         # Resolve iterable based on type
@@ -90,7 +221,7 @@ class ForEachAction(Action):
 
         # Execute actions for each item
         for item in items:
-            ctx[self.item_field] = item
+            ctx[self.ctx_var] = item
             ctx.update(self.process.run(ctx))
 
         return ctx
