@@ -5,6 +5,9 @@ from fractal_specifications.generic.specification import Specification
 from fractal.core.process.action import Action
 from fractal.core.process.process_context import ProcessContext, _expand_dotted_keys
 
+# Sentinel value to distinguish "not provided" from "None"
+_NOT_PROVIDED = object()
+
 
 def _get_nested_value(ctx, field: str):
     """Get nested field value using dot notation.
@@ -117,30 +120,56 @@ class SetContextVariableAction(Action):
 
 
 class SetValueAction(Action):
-    """Set a nested field in a context variable to a value from another context variable.
+    """Set a nested field to either a direct value or a value from a context variable.
 
-    Both target and ctx_var support dot notation.
+    The target field supports dot notation for nested access.
 
     Example:
-        # Set user.name from context variable user_name
+        # Set from context variable
         SetValueAction(target="user.name", ctx_var="user_name")
 
-        # Set user.address.city from another nested field
+        # Set from nested context variable
         SetValueAction(target="user.address.city", ctx_var="company.location.city")
+
+        # Set direct value
+        SetValueAction(target="command.entity.status", value=Status.CANCELED)
+
+        # Set direct value with any type (including None)
+        SetValueAction(target="count", value=0)
+        SetValueAction(target="settings.enabled", value=True)
+        SetValueAction(target="user.roles", value=["admin", "user"])
+        SetValueAction(target="user.email", value=None)
     """
 
-    def __init__(self, *, target: str, ctx_var: str):
+    def __init__(self, *, target: str, ctx_var: str = None, value=_NOT_PROVIDED):
         """
         Args:
             target: Target field to set (supports dot notation, e.g., "user.name")
             ctx_var: Source context variable to read from (supports dot notation, e.g., "user_name")
+            value: Direct value to set (any type, including None)
+
+        Note: Exactly one of ctx_var or value must be provided.
         """
+        # Check if both or neither are provided
+        ctx_var_provided = ctx_var is not None
+        value_provided = value is not _NOT_PROVIDED
+
+        if not ctx_var_provided and not value_provided:
+            raise ValueError("Exactly one of 'ctx_var' or 'value' must be provided")
+        if ctx_var_provided and value_provided:
+            raise ValueError("Exactly one of 'ctx_var' or 'value' must be provided")
+
         self.target = target
         self.ctx_var = ctx_var
+        self.value = value
+        self._value_provided = value_provided
 
     def execute(self, ctx: ProcessContext) -> ProcessContext:
-        # Get the value from context variable
-        source_value = _get_nested_value(ctx, self.ctx_var)
+        # Get the value from either context variable or direct value
+        if self._value_provided:
+            source_value = self.value
+        else:
+            source_value = _get_nested_value(ctx, self.ctx_var)
 
         # Set the target field
         _set_nested(ctx, self.target, source_value)
@@ -512,14 +541,22 @@ class UpdateEntityAction(Action):
 class FetchEntityAction(Action):
     """Fetch a single entity from a repository and store it in context.
 
-    The specification parameter supports both:
+    The specification parameter supports multiple types:
+    - Callable/lambda (specification factory): Creates specification at runtime
+    - String (context variable name): Reads specification from context
     - Specification object (backward compatible, will be deprecated)
-    - String context variable name (new pattern, recommended)
 
     Supports dot notation for both the specification and entity storage fields.
 
     Example:
-        # New pattern (recommended) - using default "specification" variable
+        # Inline factory (recommended for simple cases)
+        FetchEntityAction(
+            repository_name="user_repository",
+            specification=lambda ctx: EqualsSpecification("id", ctx["user_id"]),
+            ctx_var="user"
+        )
+
+        # Using default "specification" variable
         Process([
             CreateSpecificationAction(
                 specification_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"])
@@ -527,7 +564,7 @@ class FetchEntityAction(Action):
             FetchEntityAction(repository_name="user_repository", ctx_var="user")
         ])
 
-        # New pattern - using custom specification variable
+        # Using custom specification variable
         Process([
             CreateSpecificationAction(
                 specification_factory=lambda ctx: EqualsSpecification("id", 1),
@@ -558,8 +595,8 @@ class FetchEntityAction(Action):
         """
         Args:
             repository_name: Name of repository in ApplicationContext
-            specification: Either a Specification object (deprecated) or context variable name (str)
-                         (default: "specification")
+            specification: Either a callable (factory), context variable name (str),
+                         or Specification object (deprecated). Default: "specification"
             ctx_var: Context variable name to store entity (supports dot notation, default: "entity")
         """
         self.repository_name = repository_name
@@ -569,8 +606,10 @@ class FetchEntityAction(Action):
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
 
-        # Support both string (new) and Specification object (old, deprecated)
-        if isinstance(self.specification, str):
+        # Support callable (factory), string (context var), and Specification object
+        if callable(self.specification):
+            spec = self.specification(ctx)
+        elif isinstance(self.specification, str):
             spec = _get_nested_value(ctx, self.specification)
         else:
             # Backward compatibility: direct Specification object
@@ -584,9 +623,10 @@ class FetchEntityAction(Action):
 class FindEntitiesAction(Action):
     """Find multiple entities from a repository and store them in context.
 
-    The specification parameter supports both:
+    The specification parameter supports multiple types:
+    - Callable/lambda (specification factory): Creates specification at runtime
+    - String (context variable name): Reads specification from context
     - Specification object (backward compatible, will be deprecated)
-    - String context variable name (new pattern, recommended)
     - None (finds all entities)
 
     Supports dot notation for both the specification and entities storage fields.
@@ -595,7 +635,14 @@ class FindEntitiesAction(Action):
         # Find all entities (no filter)
         FindEntitiesAction(repository_name="user_repository", ctx_var="users")
 
-        # New pattern - using default "specification" variable
+        # Inline factory (recommended for simple cases)
+        FindEntitiesAction(
+            repository_name="user_repository",
+            specification=lambda ctx: EqualsSpecification("status", ctx["filter_status"]),
+            ctx_var="users"
+        )
+
+        # Using default "specification" variable
         Process([
             CreateSpecificationAction(
                 specification_factory=lambda ctx: EqualsSpecification("status", "active")
@@ -603,7 +650,7 @@ class FindEntitiesAction(Action):
             FindEntitiesAction(repository_name="user_repository", specification="specification", ctx_var="users")
         ])
 
-        # New pattern - using custom specification variable
+        # Using custom specification variable
         Process([
             CreateSpecificationAction(
                 specification_factory=lambda ctx: GreaterThanSpecification("age", 18),
@@ -634,8 +681,8 @@ class FindEntitiesAction(Action):
         """
         Args:
             repository_name: Name of repository in ApplicationContext
-            specification: Either a Specification object (deprecated), context variable name (str),
-                         or None (finds all). Default: None
+            specification: Either a callable (factory), context variable name (str),
+                         Specification object (deprecated), or None (finds all). Default: None
             ctx_var: Context variable name to store entities list (supports dot notation, default: "entities")
 
         Note: If specification is None, finds all entities (no filter).
@@ -647,9 +694,11 @@ class FindEntitiesAction(Action):
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
 
-        # Support both string (new), Specification object (old), and None
+        # Support callable (factory), string (context var), Specification object, and None
         if self.specification is None:
             spec = None
+        elif callable(self.specification):
+            spec = self.specification(ctx)
         elif isinstance(self.specification, str):
             spec = _get_nested_value(ctx, self.specification)
         else:
@@ -664,14 +713,21 @@ class FindEntitiesAction(Action):
 class DeleteEntityAction(Action):
     """Delete a single entity from a repository using a specification.
 
-    The specification parameter supports both:
+    The specification parameter supports multiple types:
+    - Callable/lambda (specification factory): Creates specification at runtime
+    - String (context variable name): Reads specification from context
     - Specification object (backward compatible, will be deprecated)
-    - String context variable name (new pattern, recommended)
 
     Supports dot notation for the specification field.
 
     Example:
-        # New pattern - using default "specification" variable
+        # Inline factory (recommended for simple cases)
+        DeleteEntityAction(
+            repository_name="user_repository",
+            specification=lambda ctx: EqualsSpecification("id", ctx["user_id"])
+        )
+
+        # Using default "specification" variable
         Process([
             CreateSpecificationAction(
                 specification_factory=lambda ctx: EqualsSpecification("id", ctx["user_id"])
@@ -679,7 +735,7 @@ class DeleteEntityAction(Action):
             DeleteEntityAction(repository_name="user_repository")
         ])
 
-        # New pattern - using custom specification variable
+        # Using custom specification variable
         Process([
             CreateSpecificationAction(
                 specification_factory=lambda ctx: EqualsSpecification("id", 1),
@@ -702,8 +758,8 @@ class DeleteEntityAction(Action):
         """
         Args:
             repository_name: Name of repository in ApplicationContext
-            specification: Either a Specification object (deprecated) or context variable name (str)
-                         (default: "specification")
+            specification: Either a callable (factory), context variable name (str),
+                         or Specification object (deprecated). Default: "specification"
         """
         self.repository_name = repository_name
         self.specification = specification
@@ -711,8 +767,10 @@ class DeleteEntityAction(Action):
     def execute(self, ctx: ProcessContext) -> ProcessContext:
         repository = getattr(ctx.fractal.context, self.repository_name)
 
-        # Support both string (new) and Specification object (old, deprecated)
-        if isinstance(self.specification, str):
+        # Support callable (factory), string (context var), and Specification object
+        if callable(self.specification):
+            spec = self.specification(ctx)
+        elif isinstance(self.specification, str):
             spec = _get_nested_value(ctx, self.specification)
         else:
             # Backward compatibility: direct Specification object
